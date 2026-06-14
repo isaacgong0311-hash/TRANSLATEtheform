@@ -20,6 +20,7 @@ Help already exists — food assistance, Medicaid, housing aid, financial aid. P
    - **What they need from you**, plus an **interactive document checklist** you can tick off as you gather each item
    - **A reply, already written for you** — a complete, ready-to-print response/appeal letter in English (the language the office reads), filled with your letter's details, with **Copy / Download / Print** buttons. This is the part a chatbot won't hand you.
    - **A phone script** — exactly what to say when you call, in your language
+   - **Talk it through (voice)** — a grounded assistant that does two things, hands-free, in your language: **Ask a question** about *your specific* letter, and **Practice the call** — the AI role-plays the office clerk on the phone so you can rehearse the scary call out loud before making it for real. Speak with your voice; it speaks back. It only knows the facts we read from your letter, so it can't wander off and invent specifics.
    - **Important dates** with one-tap **add-to-calendar**, plus an **urgency** badge
    - A **scam/fraud warning** when the letter shows known red flags
    - **Real, verified help** — a curated directory of *official* national programs (HUD, LIHEAP, Medicaid, USCIS, CFPB, 211, 988…) matched to the letter's topic, with real phone numbers and source links. These come from a hand-checked list, **never invented by the model.**
@@ -27,6 +28,7 @@ Help already exists — food assistance, Medicaid, housing aid, financial aid. P
 ### Why this isn't "just ChatGPT with a photo"
 - **Grounded, not guessed.** Every recommended contact comes from a verified directory in the codebase — a general chatbot will happily hallucinate a plausible-looking phone number. We separate facts *read from your letter* (AI, double-check it) from *verified directory* help (official sources).
 - **It produces the artifact, not just advice.** The hard part of getting help isn't understanding the letter — it's *responding* to it. We generate the actual reply letter, ready to send.
+- **It rehearses the hard part with you.** Beyond text, you can *practice the phone call out loud* — the AI plays the clerk, in your language, grounded only in your letter's facts. A general chatbot won't put you in the chair before the real call.
 - **Built for the people support is hard to find for** — non-English speakers, low-literacy and low-vision users — with translation, read-aloud, an extra-simple reading level, and right-to-left support.
 
 ## Run it locally
@@ -80,7 +82,7 @@ The app uses no external dataset and no training data of our own. The only data 
 ### Pitch video outline (3–5 min)
 1. **0:00 Hook** — hold up a real, scary-looking denial letter. "Imagine this came for your family, and English isn't your first language."
 2. **0:30 Problem** — help exists; the letter is the wall. Cite how confusing systems block people.
-3. **1:15 Demo** — photograph the letter → switch language to Spanish → cards appear; tap **read-aloud**; show the **phone script** and **add-to-calendar**.
+3. **1:15 Demo** — photograph the letter → switch language to Spanish → cards appear; tap **read-aloud**; open **Practice the call** and rehearse out loud with the AI clerk in Spanish; show **add-to-calendar**.
 4. **2:30 The "wow"** — scan a fake IRS/gift-card letter → the **scam warning** fires with the exact red flags. This is your memorable moment.
 5. **3:30 Responsible AI** — no storage, no invented facts, confidence score, human confirms eligibility, crisis escalation.
 6. **4:15 Impact** — who this reaches (non-English families, low-literacy, seniors) and why it scales for free via 211.

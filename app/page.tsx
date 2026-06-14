@@ -8,6 +8,7 @@ import {
   type Category,
   type Resource,
 } from "./resources";
+import Assistant from "./Assistant";
 
 type Step = { step: string; detail: string };
 type ChecklistItem = { item: string; why: string };
@@ -298,7 +299,7 @@ export default function Home() {
         <div className="h-1.5 w-full bg-red-500" aria-hidden="true" />
       )}
 
-      <header className="border-b border-slate-200/70 bg-white/70 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-4">
           <Logo />
           <div className="min-w-0">
@@ -317,13 +318,16 @@ export default function Home() {
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-8">
         <div className="mb-7 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Free · Private · 10+ languages
+          </span>
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Confused by a letter? We&apos;ll explain it.
           </h1>
-          <p className="mx-auto mt-2 max-w-md text-base text-slate-600">
+          <p className="mx-auto mt-3 max-w-md text-pretty text-base leading-relaxed text-slate-600">
             Take a photo of a bill, notice, or form. We&apos;ll tell you what it
-            means, warn you if it looks like a scam, and show you exactly what to
-            do — in your language.
+            means, warn you if it looks like a scam, and even rehearse the phone
+            call with you — in your language.
           </p>
         </div>
 
@@ -554,6 +558,20 @@ export default function Home() {
               </div>
             </div>
 
+            <Assistant
+              context={{
+                documentType: result.documentType,
+                category: result.category,
+                meaning: result.meaning,
+                deadline: result.deadline,
+                whatTheyNeed: result.whatTheyNeed,
+                keyDetails: result.keyDetails,
+              }}
+              lang={lang}
+              simplify={simplify}
+              dir={dir}
+            />
+
             {hasDetails && (
               <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className="text-xl font-bold">Key details</h2>
@@ -689,7 +707,7 @@ export default function Home() {
                   English because that&apos;s what the office reads. Fill in anything in
                   [brackets] and check it before sending.
                 </p>
-                <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-serif text-sm leading-relaxed text-slate-800">
+                <pre className="ttf-scroll mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-serif text-sm leading-relaxed text-slate-800">
                   {result.responseLetter.body}
                 </pre>
                 <div className="mt-3 flex flex-wrap gap-2">
