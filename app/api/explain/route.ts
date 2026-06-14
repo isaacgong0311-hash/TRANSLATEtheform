@@ -54,6 +54,31 @@ const ResultSchema = z.object({
   whatTheyNeed: z
     .array(z.string())
     .describe("Concrete things this document is asking the reader to provide or do. Empty if none."),
+  documentChecklist: z
+    .array(
+      z.object({
+        item: z.string().describe("A specific document or item to gather, e.g. 'Pay stubs from the last 30 days'."),
+        why: z.string().describe("One short phrase on why it is needed, in the chosen language."),
+      }),
+    )
+    .describe(
+      "A practical checklist of documents/items the reader should gather to respond. Only include items the letter actually implies. Empty if none.",
+    ),
+  responseLetter: z
+    .object({
+      applicable: z
+        .boolean()
+        .describe("True only if a written reply (appeal, response, or request) would genuinely help the reader respond to this letter."),
+      kind: z
+        .string()
+        .describe("Short label for the letter type in the chosen language, e.g. 'Appeal letter' or 'Response letter'. Empty if not applicable."),
+      body: z
+        .string()
+        .describe(
+          "If applicable, a complete, ready-to-send formal letter WRITTEN IN ENGLISH (because the receiving office reads English), filled in with the sender/case number/details visible in the document. Use clearly marked blanks like [Your full name], [Your address], [Today's date] for anything the reader must add. Polite, concise, and correctly structured (date, recipient, subject, body, sign-off). Empty string if not applicable.",
+        ),
+    })
+    .describe("A generated written reply the reader can print, sign, and send."),
   nextSteps: z
     .array(
       z.object({
@@ -112,6 +137,12 @@ const JSON_SHAPE = `{
     "amountDue": string or null
   },
   "whatTheyNeed": string[],          // things the reader must provide/do; [] if none
+  "documentChecklist": [ { "item": string, "why": string } ],  // documents/items to gather; [] if none. "why" in the chosen language
+  "responseLetter": {
+    "applicable": boolean,           // true only if a written reply would genuinely help
+    "kind": string,                  // e.g. "Appeal letter" (in chosen language); "" if not applicable
+    "body": string                   // a complete ready-to-send letter IN ENGLISH, filled with visible details, using [bracketed blanks] for what the reader must add; "" if not applicable
+  },
   "nextSteps": [ { "step": string, "detail": string } ],
   "phoneScript": string,             // polite 2-4 sentence call script, or "" if no call needed
   "deadline": string or null,        // copied exactly as written, or null
@@ -191,6 +222,8 @@ export async function POST(req: Request) {
             "- Only set deadlineISO when a complete, unambiguous calendar date is visible. If only a relative term like 'within 10 days' appears, leave deadlineISO null.",
             "- For scam detection, only flag real warning signs you can see; do not accuse legitimate official letters of being scams. When unsure, set isPossibleScam to false but you may still mention caution in a next step.",
             "- The phone script must be polite, simple, and something a nervous, non-native speaker could read aloud.",
+            "- The responseLetter.body must be written in ENGLISH (the receiving office reads English), even though everything else is in the chosen language. Only fill in facts visible in the document; use [bracketed blanks] for anything the reader must supply. Set applicable to false (and use empty strings) when no written reply makes sense.",
+            "- documentChecklist items must be real documents the letter implies the reader needs; never pad the list.",
             "",
             "Respond with ONLY a single valid JSON object — no markdown, no code fences, no text before or after. Use EXACTLY these keys and value types:",
             JSON_SHAPE,

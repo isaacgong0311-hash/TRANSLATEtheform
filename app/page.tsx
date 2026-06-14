@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  RESOURCES,
+  CRISIS_RESOURCES,
+  SCAM_RESOURCE,
+  type Category,
+  type Resource,
+} from "./resources";
 
 type Step = { step: string; detail: string };
-type Category =
-  | "housing"
-  | "healthcare"
-  | "benefits"
-  | "utilities"
-  | "legal"
-  | "school"
-  | "financial"
-  | "immigration"
-  | "other";
+type ChecklistItem = { item: string; why: string };
+type ResponseLetter = { applicable: boolean; kind: string; body: string };
 
 type Result = {
   documentType: string;
@@ -28,6 +27,8 @@ type Result = {
     amountDue: string | null;
   };
   whatTheyNeed: string[];
+  documentChecklist: ChecklistItem[];
+  responseLetter: ResponseLetter;
   nextSteps: Step[];
   phoneScript: string;
   deadline: string | null;
@@ -53,20 +54,6 @@ const LANGUAGES: { label: string; bcp47: string; tts: string }[] = [
 
 const RTL_LANGS = new Set(["ar"]);
 
-// Verified U.S. national help lines. Kept small and accurate on purpose —
-// we never invent local numbers we cannot confirm.
-const HOTLINES: Record<Category, { name: string; phone: string }[]> = {
-  housing: [{ name: "211 — local housing & basic-needs help", phone: "211" }],
-  healthcare: [{ name: "211 — local health & benefits help", phone: "211" }],
-  benefits: [{ name: "211 — local benefits help", phone: "211" }],
-  utilities: [{ name: "211 — utility & energy assistance", phone: "211" }],
-  legal: [{ name: "211 — referral to free legal aid", phone: "211" }],
-  school: [{ name: "211 — local family & school resources", phone: "211" }],
-  financial: [{ name: "211 — financial & basic-needs help", phone: "211" }],
-  immigration: [{ name: "211 — local immigrant services referral", phone: "211" }],
-  other: [{ name: "211 — connects you to local help", phone: "211" }],
-};
-
 const URGENCY_STYLES: Record<Result["urgency"], string> = {
   high: "bg-red-100 text-red-800 border-red-300",
   medium: "bg-amber-100 text-amber-800 border-amber-300",
@@ -83,7 +70,8 @@ const LOADING_MESSAGES = [
   "Reading your letter…",
   "Finding the important dates…",
   "Checking for scam warning signs…",
-  "Writing your next steps…",
+  "Gathering verified help near you…",
+  "Writing your reply letter…",
 ];
 
 function buildIcs(dateISO: string, summary: string): string {
@@ -122,6 +110,8 @@ export default function Home() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
+  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [copiedLetter, setCopiedLetter] = useState(false);
   const previewUrl = useRef<string | null>(null);
 
   const lang = LANGUAGES.find((l) => l.label === language) ?? LANGUAGES[0];
@@ -162,6 +152,8 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setChecked(new Set());
+    setCopiedLetter(false);
     try {
       const body = new FormData();
       body.append("image", file);
@@ -243,6 +235,56 @@ export default function Home() {
     a.download = "deadline.ics";
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function toggleChecked(i: number) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
+
+  async function copyLetter() {
+    const body = result?.responseLetter.body;
+    if (!body) return;
+    try {
+      await navigator.clipboard.writeText(body);
+      setCopiedLetter(true);
+      setTimeout(() => setCopiedLetter(false), 2000);
+    } catch {
+      // Clipboard can be blocked; the download button is the fallback.
+    }
+  }
+
+  function downloadLetter() {
+    const body = result?.responseLetter.body;
+    if (!body) return;
+    const blob = new Blob([body], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "my-reply-letter.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printLetter() {
+    const body = result?.responseLetter.body;
+    if (!body || typeof window === "undefined") return;
+    const w = window.open("", "_blank", "width=800,height=900");
+    if (!w) return;
+    const safe = body
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    w.document.write(
+      `<pre style="font:14px/1.6 Georgia,serif;white-space:pre-wrap;padding:48px;max-width:680px;margin:auto">${safe}</pre>`,
+    );
+    w.document.close();
+    w.focus();
+    w.print();
   }
 
   const kd = result?.keyDetails;
@@ -515,6 +557,9 @@ export default function Home() {
             {hasDetails && (
               <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className="text-xl font-bold">Key details</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Read from your letter by AI — double-check against the original.
+                </p>
                 <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {kd!.sender && <Detail label="From" value={kd!.sender} />}
                   {kd!.contactPhone && (
@@ -560,6 +605,53 @@ export default function Home() {
               </div>
             )}
 
+            {result.documentChecklist.length > 0 && (
+              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="text-xl font-bold">Documents to gather</h2>
+                  <span className="text-sm font-medium text-slate-500">
+                    {checked.size} of {result.documentChecklist.length} ready
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-slate-500">
+                  Check each one off as you find it.
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {result.documentChecklist.map((c, i) => {
+                    const done = checked.has(i);
+                    return (
+                      <li key={i}>
+                        <label
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                            done
+                              ? "border-emerald-300 bg-emerald-50"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={done}
+                            onChange={() => toggleChecked(i)}
+                            className="mt-0.5 h-5 w-5 flex-none rounded border-slate-300 text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                          />
+                          <span>
+                            <span
+                              className={`font-medium ${done ? "text-emerald-900 line-through" : "text-slate-900"}`}
+                            >
+                              {c.item}
+                            </span>
+                            {c.why && (
+                              <span className="block text-sm text-slate-500">{c.why}</span>
+                            )}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
             {result.nextSteps.length > 0 && (
               <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className="text-xl font-bold">Your next steps</h2>
@@ -576,6 +668,50 @@ export default function Home() {
                     </li>
                   ))}
                 </ol>
+              </div>
+            )}
+
+            {result.responseLetter.applicable && result.responseLetter.body && (
+              <div className="ttf-fade-in rounded-2xl border-2 border-blue-300 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-blue-700">
+                    ✍️ Done for you
+                  </span>
+                  {result.responseLetter.kind && (
+                    <span className="text-sm font-medium text-slate-500">
+                      {result.responseLetter.kind}
+                    </span>
+                  )}
+                </div>
+                <h2 className="mt-2 text-xl font-bold">Your reply, already written</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  We drafted a reply you can print, sign, and send. It&apos;s written in
+                  English because that&apos;s what the office reads. Fill in anything in
+                  [brackets] and check it before sending.
+                </p>
+                <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-serif text-sm leading-relaxed text-slate-800">
+                  {result.responseLetter.body}
+                </pre>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    onClick={copyLetter}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                  >
+                    {copiedLetter ? "✓ Copied" : "Copy"}
+                  </button>
+                  <button
+                    onClick={downloadLetter}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  >
+                    Download
+                  </button>
+                  <button
+                    onClick={printLetter}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  >
+                    Print
+                  </button>
+                </div>
               </div>
             )}
 
@@ -599,24 +735,28 @@ export default function Home() {
             )}
 
             <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-xl font-bold">Where to get more help</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-bold">Real help you can use now</h2>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  ✓ Verified
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                These are real national programs from official sources — not
+                AI-generated. We never invent phone numbers.
+              </p>
               <ul className="mt-3 space-y-2">
-                {HOTLINES[result.category].map((h) => (
-                  <li key={h.phone} className="flex items-center justify-between gap-3">
-                    <span className="text-slate-700">{h.name}</span>
-                    <a
-                      href={`tel:${h.phone}`}
-                      className="flex-none rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-blue-700 transition hover:bg-slate-100"
-                    >
-                      Call {h.phone}
-                    </a>
-                  </li>
+                {result.isPossibleScam && (
+                  <ResourceRow resource={SCAM_RESOURCE} />
+                )}
+                {result.isCrisis &&
+                  CRISIS_RESOURCES.map((r) => (
+                    <ResourceRow key={r.name} resource={r} />
+                  ))}
+                {RESOURCES[result.category].map((r) => (
+                  <ResourceRow key={r.name} resource={r} />
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-slate-500">
-                211 is a free, confidential U.S. service that connects you to local
-                help in many languages, 24/7.
-              </p>
             </div>
 
             <div className="flex justify-center pt-1">
@@ -649,6 +789,37 @@ function Detail({ label, value }: { label: string; value: string }) {
       </dt>
       <dd className="mt-0.5 font-medium text-slate-900">{value}</dd>
     </div>
+  );
+}
+
+function ResourceRow({ resource }: { resource: Resource }) {
+  return (
+    <li className="rounded-xl border border-slate-200 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-slate-900">{resource.name}</p>
+          <p className="mt-0.5 text-sm text-slate-600">{resource.desc}</p>
+          {resource.url && (
+            <a
+              href={resource.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-block break-all text-xs font-medium text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            >
+              {resource.url.replace(/^https?:\/\//, "")}
+            </a>
+          )}
+        </div>
+        {resource.phone && (
+          <a
+            href={`tel:${resource.phone.replace(/[^+\d]/g, "")}`}
+            className="flex-none rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-blue-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            Call {resource.phone}
+          </a>
+        )}
+      </div>
+    </li>
   );
 }
 

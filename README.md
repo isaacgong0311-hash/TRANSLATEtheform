@@ -13,15 +13,21 @@ Help already exists — food assistance, Medicaid, housing aid, financial aid. P
 ## What it does
 
 1. You photograph a letter (benefits, healthcare, housing, school, legal).
-2. A vision AI reads it and returns four things in plain, 6th-grade language **in your chosen language**:
+2. A vision AI reads it and returns, in plain language **in your chosen language**:
    - **What this means** (with a **read-aloud** button for low-literacy / low-vision users)
    - **Why I think this** + a **confidence score** (explainable AI)
    - **Key details** pulled out: sender, phone, account/case #, amount
-   - **What they need from you** and numbered **next steps**
+   - **What they need from you**, plus an **interactive document checklist** you can tick off as you gather each item
+   - **A reply, already written for you** — a complete, ready-to-print response/appeal letter in English (the language the office reads), filled with your letter's details, with **Copy / Download / Print** buttons. This is the part a chatbot won't hand you.
    - **A phone script** — exactly what to say when you call, in your language
    - **Important dates** with one-tap **add-to-calendar**, plus an **urgency** badge
    - A **scam/fraud warning** when the letter shows known red flags
-   - A **crisis flag** for emergencies, and **211** help-line referrals by topic
+   - **Real, verified help** — a curated directory of *official* national programs (HUD, LIHEAP, Medicaid, USCIS, CFPB, 211, 988…) matched to the letter's topic, with real phone numbers and source links. These come from a hand-checked list, **never invented by the model.**
+
+### Why this isn't "just ChatGPT with a photo"
+- **Grounded, not guessed.** Every recommended contact comes from a verified directory in the codebase — a general chatbot will happily hallucinate a plausible-looking phone number. We separate facts *read from your letter* (AI, double-check it) from *verified directory* help (official sources).
+- **It produces the artifact, not just advice.** The hard part of getting help isn't understanding the letter — it's *responding* to it. We generate the actual reply letter, ready to send.
+- **Built for the people support is hard to find for** — non-English speakers, low-literacy and low-vision users — with translation, read-aloud, an extra-simple reading level, and right-to-left support.
 
 ## Run it locally
 
@@ -52,13 +58,13 @@ Translate the Form
 Understand any confusing official letter — and know what to do next — in your language.
 
 ### AI Architecture (≤600 chars)
-Input: a photo of an official letter plus a chosen language. The image goes to a vision LLM (Groq's Llama 4 Scout) via the Vercel AI SDK. A constrained system prompt makes the model return a typed JSON object validated with Zod: document type + category, a confidence score and the reasoning behind it, urgency, extracted entities (sender, phone, account, amount), plain-language meaning, required items, ordered steps, a phone script, a verbatim deadline (and ISO date if unambiguous), and scam + crisis flags. The frontend renders cards, read-aloud, and add-to-calendar.
+Input: a photo of an official letter plus a chosen language. The image goes to a vision LLM (Groq's Llama 4 Scout) via the Vercel AI SDK. A constrained system prompt makes the model return a typed JSON object validated with Zod: document type + category, a confidence score and reasoning, urgency, extracted entities, plain-language meaning, a document checklist, an ordered step list, a phone script, a verbatim deadline, scam + crisis flags, and a complete ready-to-send English reply letter. The app then GROUNDS its recommendations: instead of letting the model invent help-line numbers, it maps the detected category to a hand-verified directory of official national programs. The frontend renders cards, an interactive checklist, the printable reply letter, read-aloud, and add-to-calendar.
 
 ### Human-in-the-Loop (≤500 chars)
 The eligibility decision stays with humans. The AI never tells a user they "qualify" or are "denied" — it explains what the letter says and always directs them to confirm with the office named on the document. Deadlines are copied exactly, never calculated, and the UI explicitly asks the user to re-check the date on the original letter before acting. The user, not the model, takes the final step.
 
 ### Responsible AI Guardrail (≤500 chars)
-Risk: a stressed user could over-trust an AI summary of a sensitive document. Mitigations: (1) the model never invents programs, dates, or contacts not visible, and lowers its shown confidence score when text is unclear; (2) images are never stored — read once in memory; (3) a scam detector warns before the user sends money or data; (4) crisis cases surface a banner urging immediate human help; (5) eligibility stays with humans, and a standing disclaimer notes this is understanding, not legal advice.
+Risk: a stressed user could over-trust an AI summary of a sensitive document. Mitigations: (1) recommended help-lines come from a hand-verified directory in the code, never generated by the model, so we can't hallucinate a fake phone number — and the UI labels what was "read from your letter" vs. "verified official source"; (2) the model never invents dates or contacts, and lowers its shown confidence when text is unclear; (3) images are never stored — read once in memory; (4) a scam detector warns before the user sends money or data; (5) crisis cases surface immediate human help; (6) eligibility stays with humans; the generated reply letter uses [bracketed blanks] the user must fill and review before sending.
 
 ### AI Tools Used (≤800 chars)
 - Groq Llama 4 Scout — vision + language model that reads the letter and generates the explanation. FREE tier (Groq Cloud).
