@@ -113,6 +113,8 @@ export default function Home() {
   const [speaking, setSpeaking] = useState(false);
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [copiedLetter, setCopiedLetter] = useState(false);
+  const [translatedLetter, setTranslatedLetter] = useState<string | null>(null);
+  const [translatingLetter, setTranslatingLetter] = useState(false);
   const previewUrl = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -156,6 +158,7 @@ export default function Home() {
     setResult(null);
     setChecked(new Set());
     setCopiedLetter(false);
+    setTranslatedLetter(null);
     try {
       const body = new FormData();
       body.append("image", file);
@@ -279,7 +282,7 @@ export default function Home() {
   }
 
   async function copyLetter() {
-    const body = result?.responseLetter.body;
+    const body = translatedLetter ?? result?.responseLetter.body;
     if (!body) return;
     try {
       await navigator.clipboard.writeText(body);
@@ -291,7 +294,7 @@ export default function Home() {
   }
 
   function downloadLetter() {
-    const body = result?.responseLetter.body;
+    const body = translatedLetter ?? result?.responseLetter.body;
     if (!body) return;
     const blob = new Blob([body], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -317,6 +320,24 @@ export default function Home() {
     w.document.close();
     w.focus();
     w.print();
+  }
+
+  async function translateLetter() {
+    const body = result?.responseLetter.body;
+    if (!body || lang.label === "English") return;
+    if (translatedLetter) { setTranslatedLetter(null); return; } // toggle off
+    setTranslatingLetter(true);
+    try {
+      const res = await fetch("/api/translate-field", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: body, language: lang.label }),
+      });
+      const data = (await res.json()) as { translation?: string; error?: string };
+      if (res.ok && data.translation) setTranslatedLetter(data.translation);
+    } catch { /* silent — original still shown */ } finally {
+      setTranslatingLetter(false);
+    }
   }
 
   const kd = result?.keyDetails;
@@ -759,13 +780,33 @@ export default function Home() {
                         : "Tap to read, print, or send"
                     }
                   >
-                    <p className="text-sm text-slate-600">
-                      We drafted a reply you can print, sign, and send. It&apos;s written
-                      in English because that&apos;s what the office reads. Fill in
-                      anything in [brackets] and check it before sending.
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm text-slate-600">
+                        We drafted a reply you can print, sign, and send. It&apos;s
+                        written in English because that&apos;s what the office reads.
+                        Fill in anything in [brackets] and check it before sending.
+                      </p>
+                      {lang.label !== "English" && (
+                        <button
+                          onClick={() => void translateLetter()}
+                          disabled={translatingLetter}
+                          className="flex-none rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                        >
+                          {translatingLetter
+                            ? "Translating…"
+                            : translatedLetter
+                            ? "Show English"
+                            : `Translate to ${lang.label}`}
+                        </button>
+                      )}
+                    </div>
+                    {translatedLetter && (
+                      <p className="mt-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs text-indigo-700">
+                        Showing {lang.label} translation — send the English version above to the office.
+                      </p>
+                    )}
                     <pre className="ttf-scroll mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-serif text-sm leading-relaxed text-slate-800">
-                      {result.responseLetter.body}
+                      {translatedLetter ?? result.responseLetter.body}
                     </pre>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button

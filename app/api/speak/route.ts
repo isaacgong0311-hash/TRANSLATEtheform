@@ -1,6 +1,17 @@
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
+// Decode HTML entities so ElevenLabs doesn't read "&apos;" or "&amp;" aloud.
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;|&#039;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
 // ElevenLabs text-to-speech proxy.
 // Returns audio/mpeg so the frontend can play it via the Audio API.
 // Falls back gracefully: if ELEVENLABS_API_KEY is absent, returns 404
@@ -33,7 +44,7 @@ export async function POST(req: Request) {
         Accept: "audio/mpeg",
       },
       body: JSON.stringify({
-        text: text.slice(0, 2500),
+        text: decodeEntities(text).slice(0, 2500),
         model_id: MODEL_ID,
         voice_settings: {
           stability: 0.5,

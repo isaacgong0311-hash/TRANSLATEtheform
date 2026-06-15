@@ -35,12 +35,19 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { category = "general", city = "", state = "" } = body;
-  if (!state.trim()) {
+  // Sanitize: strip characters that could alter the prompt structure.
+  const sanitize = (s: string) =>
+    s.replace(/[^\w\s,.\-']/g, "").slice(0, 60).trim();
+
+  const category = sanitize(body.category ?? "general") || "general";
+  const city = sanitize(body.city ?? "");
+  const state = sanitize(body.state ?? "");
+
+  if (!state) {
     return Response.json({ error: "State is required." }, { status: 400 });
   }
 
-  const location = city.trim() ? `${city.trim()}, ${state.trim()}` : state.trim();
+  const location = city ? `${city}, ${state}` : state;
 
   const res = await fetch("https://api.perplexity.ai/chat/completions", {
     method: "POST",

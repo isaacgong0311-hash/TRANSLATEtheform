@@ -99,6 +99,7 @@ const ResultSchema = z.object({
   deadlineISO: z
     .string()
     .nullable()
+    .transform((v) => (/^\d{4}-\d{2}-\d{2}$/.test(v ?? "") ? v : null))
     .describe(
       "The deadline as a YYYY-MM-DD date ONLY if a full, unambiguous date is clearly visible in the document. Otherwise null. Never guess or calculate.",
     ),
@@ -153,19 +154,31 @@ const JSON_SHAPE = `{
   "crisisMessage": string            // message to seek immediate help if isCrisis, else ""
 }`;
 
-// The model is asked for raw JSON, but defensively strip code fences and grab the
-// outermost {...} in case it adds stray prose.
+// Strip code fences then use bracket-counting to find the outermost {...}.
+// lastIndexOf("}") is unreliable when the model appends prose after the JSON.
 function extractJson(text: string): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end < start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
+  const candidate = (fenced ? fenced[1] : text).trim();
+
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        try {
+          return JSON.parse(candidate.slice(start, i + 1));
+        } catch {
+          start = -1; // try next object if any
+        }
+      }
+    }
   }
+  return null;
 }
 
 export async function POST(req: Request) {
