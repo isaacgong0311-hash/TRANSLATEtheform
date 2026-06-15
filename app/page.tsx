@@ -114,6 +114,7 @@ export default function Home() {
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [copiedLetter, setCopiedLetter] = useState(false);
   const previewUrl = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const lang = LANGUAGES.find((l) => l.label === language) ?? LANGUAGES[0];
   const dir = RTL_LANGS.has(lang.bcp47) ? "rtl" : "ltr";
@@ -203,21 +204,51 @@ export default function Home() {
 
   function stopSpeaking() {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     setSpeaking(false);
   }
 
-  function readAloud() {
-    if (!result || typeof window === "undefined" || !window.speechSynthesis) return;
-    if (speaking) {
-      stopSpeaking();
-      return;
-    }
-    const parts = [
+  async function readAloud() {
+    if (!result || typeof window === "undefined") return;
+    if (speaking) { stopSpeaking(); return; }
+
+    const text = [
       result.meaning,
       result.whatTheyNeed.join(". "),
       ...result.nextSteps.map((s) => `${s.step}. ${s.detail}`),
-    ].filter(Boolean);
-    const u = new SpeechSynthesisUtterance(parts.join(". "));
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .slice(0, 2500);
+
+    // Try ElevenLabs high-quality multilingual TTS first.
+    try {
+      const res = await fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        setSpeaking(true);
+        audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); audioRef.current = null; };
+        audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); audioRef.current = null; };
+        void audio.play();
+        return;
+      }
+    } catch {
+      // fall through to browser TTS
+    }
+
+    // Browser SpeechSynthesis fallback (always available in Chrome/Safari).
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
     u.lang = lang.tts;
     u.onend = () => setSpeaking(false);
     u.onerror = () => setSpeaking(false);
@@ -767,14 +798,32 @@ export default function Home() {
                     <p className="mt-2 italic leading-relaxed text-blue-900">
                       &ldquo;{result.phoneScript}&rdquo;
                     </p>
-                    {kd?.contactPhone && (
-                      <a
-                        href={`tel:${kd.contactPhone.replace(/[^+\d]/g, "")}`}
-                        className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                      >
-                        Call {kd.contactPhone}
-                      </a>
-                    )}
+                    <div className="mt-4 flex flex-wrap items-start gap-4">
+                      {kd?.contactPhone && (
+                        <a
+                          href={`tel:${kd.contactPhone.replace(/[^+\d]/g, "")}`}
+                          className="inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                        >
+                          Call {kd.contactPhone}
+                        </a>
+                      )}
+                      <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-white p-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=88x88&format=png&data=${encodeURIComponent(
+                            result.phoneScript +
+                              (kd?.contactPhone ? `\n\nCall: ${kd.contactPhone}` : ""),
+                          )}`}
+                          alt="QR code — scan to save the phone script on your phone"
+                          width={88}
+                          height={88}
+                          className="rounded-lg"
+                        />
+                        <p className="max-w-[120px] text-xs leading-relaxed text-slate-600">
+                          Scan to get this script on your phone
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -840,6 +889,8 @@ export default function Home() {
                   ))}
                 </ul>
               </div>
+
+              <LocalHelpFinder category={result.category} />
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
@@ -867,6 +918,138 @@ export default function Home() {
           advice. Always confirm with the office named on your document.
         </div>
       </footer>
+    </div>
+  );
+}
+
+type LocalResource = {
+  name: string;
+  phone: string | null;
+  address: string | null;
+  url: string | null;
+  desc: string;
+};
+
+function LocalHelpFinder({ category }: { category: Category }) {
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resources, setResources] = useState<LocalResource[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+
+  async function search() {
+    if (!state.trim()) return;
+    setLoading(true);
+    setError(null);
+    setResources(null);
+    try {
+      const res = await fetch("/api/local-help", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, city: city.trim(), state: state.trim() }),
+      });
+      const data = (await res.json()) as { resources?: LocalResource[]; error?: string };
+      if (res.status === 503) { setUnavailable(true); return; }
+      if (!res.ok) { setError(data.error ?? "Search failed."); return; }
+      setResources(data.resources ?? []);
+    } catch {
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (unavailable) return null;
+
+  return (
+    <div className="ttf-fade-in overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white shadow-sm">
+      <div className="p-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-indigo-100 text-lg">
+            🔍
+          </span>
+          <div>
+            <h3 className="font-bold text-slate-900">Find local help near you</h3>
+            <p className="text-xs text-slate-500">
+              Live web search for{" "}
+              <span className="font-medium">{category}</span> programs in your
+              area — beyond the national list.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <input
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="City (optional)"
+            className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:border-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          />
+          <input
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+            placeholder="State *"
+            className="w-24 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:border-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            onKeyDown={(e) => e.key === "Enter" && void search()}
+          />
+          <button
+            onClick={() => void search()}
+            disabled={loading || !state.trim()}
+            className="flex-none rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40"
+          >
+            {loading ? <Spinner /> : "Search"}
+          </button>
+        </div>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </div>
+
+      {resources !== null && (
+        <div className="border-t border-indigo-100 px-5 pb-5">
+          {resources.length === 0 ? (
+            <p className="pt-4 text-sm text-slate-500">
+              No results found for {city || state}. Try a broader location.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {resources.map((r, i) => (
+                <li key={i} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{r.name}</p>
+                      <p className="mt-0.5 text-sm text-slate-600">{r.desc}</p>
+                      {r.address && (
+                        <p className="mt-0.5 text-xs text-slate-400">{r.address}</p>
+                      )}
+                      {r.url && (
+                        <a
+                          href={r.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-block break-all text-xs font-medium text-blue-700 underline-offset-2 hover:underline"
+                        >
+                          {r.url.replace(/^https?:\/\//, "")}
+                        </a>
+                      )}
+                    </div>
+                    {r.phone && (
+                      <a
+                        href={`tel:${r.phone.replace(/[^+\d]/g, "")}`}
+                        className="flex-none rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-blue-700 transition hover:bg-slate-100"
+                      >
+                        Call {r.phone}
+                      </a>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-xs text-slate-400">
+            ⚠️ AI-generated from live web search — verify details before
+            calling.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
