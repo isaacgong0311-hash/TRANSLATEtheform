@@ -291,6 +291,13 @@ export default function Home() {
   const kd = result?.keyDetails;
   const hasDetails =
     kd && (kd.sender || kd.contactPhone || kd.accountNumber || kd.amountDue);
+  const hasActions =
+    !!result &&
+    (result.nextSteps.length > 0 ||
+      result.whatTheyNeed.length > 0 ||
+      result.documentChecklist.length > 0 ||
+      (result.responseLetter.applicable && !!result.responseLetter.body) ||
+      !!result.phoneScript);
 
   return (
     <div className="flex min-h-screen flex-col" dir={dir}>
@@ -471,7 +478,7 @@ export default function Home() {
 
         {result && (
           <section
-            className="mt-6 space-y-5"
+            className="mt-6 space-y-7"
             lang={lang.bcp47}
             aria-label="Explanation of your letter"
           >
@@ -508,273 +515,291 @@ export default function Home() {
               </div>
             )}
 
-            <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-medium uppercase tracking-wide text-blue-600">
-                  {result.documentType}
-                </p>
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${URGENCY_STYLES[result.urgency]}`}
-                >
-                  {URGENCY_LABEL[result.urgency]}
-                </span>
-              </div>
+            {/* ① Understand */}
+            <div className="space-y-4">
+              <SectionHeader n={1} title="Understand it" />
 
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <h2 className="text-xl font-bold">What this means</h2>
-                <button
-                  onClick={readAloud}
-                  className="flex flex-none items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                  aria-pressed={speaking}
-                >
-                  {speaking ? "⏹ Stop" : "🔊 Read aloud"}
-                </button>
-              </div>
-
-              <p className="mt-2 text-base leading-relaxed text-slate-700">
-                {result.meaning}
-              </p>
-
-              <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-                <p>
-                  <span className="font-semibold">Why I think this:</span>{" "}
-                  {result.whyThisType}
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="font-semibold">Confidence:</span>
-                  <span className="inline-flex h-2 w-24 overflow-hidden rounded-full bg-slate-200">
-                    <span
-                      className={`h-full ${result.confidence >= 60 ? "bg-emerald-500" : "bg-amber-500"}`}
-                      style={{ width: `${result.confidence}%` }}
-                    />
-                  </span>
-                  <span>{result.confidence}%</span>
-                </div>
-                {result.confidence < 60 && (
-                  <p className="mt-1 text-amber-700">
-                    Please double-check — the photo may be unclear.
+              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium uppercase tracking-wide text-blue-600">
+                    {result.documentType}
                   </p>
-                )}
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${URGENCY_STYLES[result.urgency]}`}
+                  >
+                    {URGENCY_LABEL[result.urgency]}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <h2 className="text-xl font-bold">What this means</h2>
+                  <button
+                    onClick={readAloud}
+                    className="flex flex-none items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    aria-pressed={speaking}
+                  >
+                    {speaking ? "⏹ Stop" : "🔊 Read aloud"}
+                  </button>
+                </div>
+
+                <p className="mt-2 text-base leading-relaxed text-slate-700">
+                  {result.meaning}
+                </p>
+
+                <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+                  <p>
+                    <span className="font-semibold">Why I think this:</span>{" "}
+                    {result.whyThisType}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="font-semibold">Confidence:</span>
+                    <span className="inline-flex h-2 w-24 overflow-hidden rounded-full bg-slate-200">
+                      <span
+                        className={`h-full ${result.confidence >= 60 ? "bg-emerald-500" : "bg-amber-500"}`}
+                        style={{ width: `${result.confidence}%` }}
+                      />
+                    </span>
+                    <span>{result.confidence}%</span>
+                  </div>
+                  {result.confidence < 60 && (
+                    <p className="mt-1 text-amber-700">
+                      Please double-check — the photo may be unclear.
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {result.deadline && (
+                <div className="ttf-fade-in rounded-2xl border border-amber-300 bg-amber-50 p-4">
+                  <p className="font-semibold text-amber-900">📅 Important date</p>
+                  <p className="mt-1 text-amber-900">{result.deadline}</p>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Double-check this date on the letter yourself before acting.
+                  </p>
+                  {result.deadlineISO && (
+                    <button
+                      onClick={downloadCalendar}
+                      className="mt-3 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                    >
+                      Add reminder to calendar
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            <Assistant
-              context={{
-                documentType: result.documentType,
-                category: result.category,
-                meaning: result.meaning,
-                deadline: result.deadline,
-                whatTheyNeed: result.whatTheyNeed,
-                keyDetails: result.keyDetails,
-              }}
-              lang={lang}
-              simplify={simplify}
-              dir={dir}
-            />
+            {/* ② Take action */}
+            {hasActions && (
+              <div className="space-y-4">
+                <SectionHeader n={2} title="Take action" />
 
-            {hasDetails && (
-              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="text-xl font-bold">Key details</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Read from your letter by AI — double-check against the original.
-                </p>
-                <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {kd!.sender && <Detail label="From" value={kd!.sender} />}
-                  {kd!.contactPhone && (
-                    <Detail label="Phone" value={kd!.contactPhone} />
-                  )}
-                  {kd!.accountNumber && (
-                    <Detail label="Account / case #" value={kd!.accountNumber} />
-                  )}
-                  {kd!.amountDue && <Detail label="Amount" value={kd!.amountDue} />}
-                </dl>
-              </div>
-            )}
-
-            {result.deadline && (
-              <div className="ttf-fade-in rounded-2xl border border-amber-300 bg-amber-50 p-4">
-                <p className="font-semibold text-amber-900">📅 Important date</p>
-                <p className="mt-1 text-amber-900">{result.deadline}</p>
-                <p className="mt-1 text-sm text-amber-700">
-                  Double-check this date on the letter yourself before acting.
-                </p>
-                {result.deadlineISO && (
-                  <button
-                    onClick={downloadCalendar}
-                    className="mt-3 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                  >
-                    Add reminder to calendar
-                  </button>
-                )}
-              </div>
-            )}
-
-            {result.whatTheyNeed.length > 0 && (
-              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="text-xl font-bold">What they need from you</h2>
-                <ul className="mt-3 space-y-2">
-                  {result.whatTheyNeed.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-slate-700">
-                      <span className="text-blue-600">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {result.documentChecklist.length > 0 && (
-              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="text-xl font-bold">Documents to gather</h2>
-                  <span className="text-sm font-medium text-slate-500">
-                    {checked.size} of {result.documentChecklist.length} ready
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-slate-500">
-                  Check each one off as you find it.
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {result.documentChecklist.map((c, i) => {
-                    const done = checked.has(i);
-                    return (
-                      <li key={i}>
-                        <label
-                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
-                            done
-                              ? "border-emerald-300 bg-emerald-50"
-                              : "border-slate-200 bg-white hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={done}
-                            onChange={() => toggleChecked(i)}
-                            className="mt-0.5 h-5 w-5 flex-none rounded border-slate-300 text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                          />
-                          <span>
-                            <span
-                              className={`font-medium ${done ? "text-emerald-900 line-through" : "text-slate-900"}`}
-                            >
-                              {c.item}
-                            </span>
-                            {c.why && (
-                              <span className="block text-sm text-slate-500">{c.why}</span>
-                            )}
+                {result.nextSteps.length > 0 && (
+                  <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 className="text-xl font-bold">Your next steps</h2>
+                    <ol className="mt-3 space-y-4">
+                      {result.nextSteps.map((s, i) => (
+                        <li key={i} className="flex gap-3">
+                          <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                            {i + 1}
                           </span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
+                          <div>
+                            <p className="font-semibold text-slate-900">{s.step}</p>
+                            <p className="text-slate-700">{s.detail}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
 
-            {result.nextSteps.length > 0 && (
-              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="text-xl font-bold">Your next steps</h2>
-                <ol className="mt-3 space-y-4">
-                  {result.nextSteps.map((s, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                        {i + 1}
+                {result.whatTheyNeed.length > 0 && (
+                  <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 className="text-xl font-bold">What they need from you</h2>
+                    <ul className="mt-3 space-y-2">
+                      {result.whatTheyNeed.map((item, i) => (
+                        <li key={i} className="flex gap-2 text-slate-700">
+                          <span className="text-blue-600">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {result.documentChecklist.length > 0 && (
+                  <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <h2 className="text-xl font-bold">Documents to gather</h2>
+                      <span className="text-sm font-medium text-slate-500">
+                        {checked.size} of {result.documentChecklist.length} ready
                       </span>
-                      <div>
-                        <p className="font-semibold text-slate-900">{s.step}</p>
-                        <p className="text-slate-700">{s.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Check each one off as you find it.
+                    </p>
+                    <ul className="mt-3 space-y-2">
+                      {result.documentChecklist.map((c, i) => {
+                        const done = checked.has(i);
+                        return (
+                          <li key={i}>
+                            <label
+                              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                                done
+                                  ? "border-emerald-300 bg-emerald-50"
+                                  : "border-slate-200 bg-white hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={done}
+                                onChange={() => toggleChecked(i)}
+                                className="mt-0.5 h-5 w-5 flex-none rounded border-slate-300 text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                              />
+                              <span>
+                                <span
+                                  className={`font-medium ${done ? "text-emerald-900 line-through" : "text-slate-900"}`}
+                                >
+                                  {c.item}
+                                </span>
+                                {c.why && (
+                                  <span className="block text-sm text-slate-500">{c.why}</span>
+                                )}
+                              </span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+                {result.responseLetter.applicable && result.responseLetter.body && (
+                  <Collapsible
+                    accent
+                    icon={
+                      <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-blue-100 text-base">
+                        ✍️
+                      </span>
+                    }
+                    title="Your reply, already written"
+                    subtitle={
+                      result.responseLetter.kind
+                        ? `${result.responseLetter.kind} · tap to read, print, or send`
+                        : "Tap to read, print, or send"
+                    }
+                  >
+                    <p className="text-sm text-slate-600">
+                      We drafted a reply you can print, sign, and send. It&apos;s written
+                      in English because that&apos;s what the office reads. Fill in
+                      anything in [brackets] and check it before sending.
+                    </p>
+                    <pre className="ttf-scroll mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-serif text-sm leading-relaxed text-slate-800">
+                      {result.responseLetter.body}
+                    </pre>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={copyLetter}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                      >
+                        {copiedLetter ? "✓ Copied" : "Copy"}
+                      </button>
+                      <button
+                        onClick={downloadLetter}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                      >
+                        Download
+                      </button>
+                      <button
+                        onClick={printLetter}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                      >
+                        Print
+                      </button>
+                    </div>
+                  </Collapsible>
+                )}
+
+                {result.phoneScript && (
+                  <div className="ttf-fade-in rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                    <h2 className="text-xl font-bold text-blue-900">
+                      📞 What to say when you call
+                    </h2>
+                    <p className="mt-2 italic leading-relaxed text-blue-900">
+                      &ldquo;{result.phoneScript}&rdquo;
+                    </p>
+                    {kd?.contactPhone && (
+                      <a
+                        href={`tel:${kd.contactPhone.replace(/[^+\d]/g, "")}`}
+                        className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                      >
+                        Call {kd.contactPhone}
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {result.responseLetter.applicable && result.responseLetter.body && (
-              <div className="ttf-fade-in rounded-2xl border-2 border-blue-300 bg-white p-5 shadow-sm">
+            {/* ③ Talk it through & get help */}
+            <div className="space-y-4">
+              <SectionHeader n={3} title="Talk it through & get help" />
+
+              <Assistant
+                context={{
+                  documentType: result.documentType,
+                  category: result.category,
+                  meaning: result.meaning,
+                  deadline: result.deadline,
+                  whatTheyNeed: result.whatTheyNeed,
+                  keyDetails: result.keyDetails,
+                }}
+                lang={lang}
+                simplify={simplify}
+                dir={dir}
+              />
+
+              {hasDetails && (
+                <Collapsible
+                  title="Key details"
+                  subtitle="Read from your letter by AI — double-check against the original"
+                >
+                  <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {kd!.sender && <Detail label="From" value={kd!.sender} />}
+                    {kd!.contactPhone && (
+                      <Detail label="Phone" value={kd!.contactPhone} />
+                    )}
+                    {kd!.accountNumber && (
+                      <Detail label="Account / case #" value={kd!.accountNumber} />
+                    )}
+                    {kd!.amountDue && <Detail label="Amount" value={kd!.amountDue} />}
+                  </dl>
+                </Collapsible>
+              )}
+
+              <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-blue-700">
-                    ✍️ Done for you
+                  <h2 className="text-xl font-bold">Real help you can use now</h2>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                    ✓ Verified
                   </span>
-                  {result.responseLetter.kind && (
-                    <span className="text-sm font-medium text-slate-500">
-                      {result.responseLetter.kind}
-                    </span>
-                  )}
                 </div>
-                <h2 className="mt-2 text-xl font-bold">Your reply, already written</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  We drafted a reply you can print, sign, and send. It&apos;s written in
-                  English because that&apos;s what the office reads. Fill in anything in
-                  [brackets] and check it before sending.
+                  These are real national programs from official sources — not
+                  AI-generated. We never invent phone numbers.
                 </p>
-                <pre className="ttf-scroll mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-serif text-sm leading-relaxed text-slate-800">
-                  {result.responseLetter.body}
-                </pre>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    onClick={copyLetter}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                  >
-                    {copiedLetter ? "✓ Copied" : "Copy"}
-                  </button>
-                  <button
-                    onClick={downloadLetter}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                  >
-                    Download
-                  </button>
-                  <button
-                    onClick={printLetter}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                  >
-                    Print
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {result.phoneScript && (
-              <div className="ttf-fade-in rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                <h2 className="text-xl font-bold text-blue-900">
-                  📞 What to say when you call
-                </h2>
-                <p className="mt-2 italic leading-relaxed text-blue-900">
-                  &ldquo;{result.phoneScript}&rdquo;
-                </p>
-                {kd?.contactPhone && (
-                  <a
-                    href={`tel:${kd.contactPhone.replace(/[^+\d]/g, "")}`}
-                    className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                  >
-                    Call {kd.contactPhone}
-                  </a>
-                )}
-              </div>
-            )}
-
-            <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold">Real help you can use now</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                  ✓ Verified
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-slate-600">
-                These are real national programs from official sources — not
-                AI-generated. We never invent phone numbers.
-              </p>
-              <ul className="mt-3 space-y-2">
-                {result.isPossibleScam && (
-                  <ResourceRow resource={SCAM_RESOURCE} />
-                )}
-                {result.isCrisis &&
-                  CRISIS_RESOURCES.map((r) => (
+                <ul className="mt-3 space-y-2">
+                  {result.isPossibleScam && (
+                    <ResourceRow resource={SCAM_RESOURCE} />
+                  )}
+                  {result.isCrisis &&
+                    CRISIS_RESOURCES.map((r) => (
+                      <ResourceRow key={r.name} resource={r} />
+                    ))}
+                  {RESOURCES[result.category].map((r) => (
                     <ResourceRow key={r.name} resource={r} />
                   ))}
-                {RESOURCES[result.category].map((r) => (
-                  <ResourceRow key={r.name} resource={r} />
-                ))}
-              </ul>
+                </ul>
+              </div>
             </div>
 
             <div className="flex justify-center pt-1">
@@ -796,6 +821,75 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function SectionHeader({ n, title }: { n: number; title: string }) {
+  return (
+    <div className="ttf-fade-in flex items-center gap-2.5 px-1 pt-2">
+      <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+        {n}
+      </span>
+      <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        {title}
+      </h2>
+    </div>
+  );
+}
+
+function Collapsible({
+  title,
+  subtitle,
+  icon,
+  accent = false,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  accent?: boolean;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className={`ttf-fade-in group overflow-hidden rounded-2xl shadow-sm [&_summary::-webkit-details-marker]:hidden ${
+        accent ? "border-2 border-blue-300 bg-white" : "border border-slate-200 bg-white"
+      }`}
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5">
+        <div className="flex min-w-0 items-center gap-3">
+          {icon}
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold leading-tight text-slate-900">{title}</h3>
+            {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+          </div>
+        </div>
+        <Chevron />
+      </summary>
+      <div className="px-5 pb-5">{children}</div>
+    </details>
+  );
+}
+
+function Chevron() {
+  return (
+    <svg
+      className="h-5 w-5 flex-none text-slate-400 transition-transform group-open:rotate-180"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
