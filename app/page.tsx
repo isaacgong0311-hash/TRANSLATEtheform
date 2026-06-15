@@ -332,11 +332,51 @@ export default function Home() {
             Confused by a letter? We&apos;ll explain it.
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-base leading-relaxed text-slate-600">
-            Take a photo of a bill, notice, or form. We&apos;ll tell you what it
-            means, warn you if it looks like a scam, and even rehearse the phone
-            call with you — in your language.
+            For immigrants, seniors, and families navigating confusing official
+            letters — take a photo and we&apos;ll explain it in plain language,
+            warn you of scams, and even rehearse the phone call with you.
           </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+            {[
+              "Medical bill",
+              "Benefits letter",
+              "Utility notice",
+              "School form",
+              "Legal notice",
+              "Immigration letter",
+            ].map((ex) => (
+              <span
+                key={ex}
+                className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
+              >
+                {ex}
+              </span>
+            ))}
+          </div>
         </div>
+
+        {!preview && !result && (
+          <>
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <PersonaCard
+                icon="🌍"
+                title="Immigrants & newcomers"
+                desc="Government letters feel impossible when English isn't your first language. We translate every word and tell you exactly what to do."
+              />
+              <PersonaCard
+                icon="👴"
+                title="Seniors & elderly"
+                desc="Medical bills, Medicare notices, Social Security letters — in plain language you can actually understand and act on."
+              />
+              <PersonaCard
+                icon="👨‍👩‍👧"
+                title="Families & students"
+                desc="School forms, housing notices, legal letters — we cut through the jargon so you know exactly what's needed."
+              />
+            </div>
+            <HowItWorks />
+          </>
+        )}
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.02]">
           <label
@@ -802,6 +842,13 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <span className="font-semibold">⚠️ AI can make mistakes.</span>{" "}
+              Always verify critical dates, amounts, and requirements directly on
+              your original letter before acting. For legal or immigration
+              matters, consult a qualified professional.
+            </div>
+
             <div className="flex justify-center pt-1">
               <button
                 onClick={reset}
@@ -820,6 +867,69 @@ export default function Home() {
           advice. Always confirm with the office named on your document.
         </div>
       </footer>
+    </div>
+  );
+}
+
+function PersonaCard({
+  icon,
+  title,
+  desc,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <span className="text-2xl">{icon}</span>
+      <h3 className="mt-2 font-bold text-slate-900">{title}</h3>
+      <p className="mt-1 text-sm leading-relaxed text-slate-600">{desc}</p>
+    </div>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    {
+      icon: "📸",
+      label: "Take a photo",
+      desc: "Snap or upload any letter, bill, or notice — up to 10 MB.",
+    },
+    {
+      icon: "🤖",
+      label: "AI reads it",
+      desc: "Extracts every date, name, amount, and warning sign.",
+    },
+    {
+      icon: "🌐",
+      label: "Plain language",
+      desc: "Explains what it means in 10+ languages.",
+    },
+    {
+      icon: "✅",
+      label: "Know what to do",
+      desc: "Checklist, reply letter, and phone script — all ready.",
+    },
+  ];
+  return (
+    <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+        How it works
+      </p>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {steps.map((s, i) => (
+          <div key={i} className="flex flex-col items-center text-center">
+            <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-xl">
+              {s.icon}
+            </span>
+            <p className="text-sm font-semibold text-slate-800">{s.label}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+              {s.desc}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
