@@ -38,6 +38,7 @@ type Result = {
   scamSigns: string[];
   isCrisis: boolean;
   crisisMessage: string;
+  userRights: string[];
 };
 
 const LANGUAGES: { label: string; bcp47: string; tts: string }[] = [
@@ -363,10 +364,10 @@ export default function Home() {
           <Logo />
           <div className="min-w-0">
             <p className="text-lg font-bold leading-tight tracking-tight text-slate-900">
-              Translate the Form
+              CivicBridge AI
             </p>
             <p className="truncate text-xs text-slate-500">
-              Understand any letter. Know what to do next.
+              Democratizing civic justice through intelligent advocacy.
             </p>
           </div>
           <span className="ms-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
@@ -381,12 +382,10 @@ export default function Home() {
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Free · Private · 10+ languages
           </span>
           <h1 className="text-balance text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Confused by a letter? We&apos;ll explain it.
+            Bridging the Gap Between Complex Policy and Citizen Action
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-base leading-relaxed text-slate-600">
-            For immigrants, seniors, and families navigating confusing official
-            letters — take a photo and we&apos;ll explain it in plain language,
-            warn you of scams, and even rehearse the phone call with you.
+            CivicBridge AI transforms confusing government notices, healthcare forms, and legal documents into clear, actionable advocacy plans. Snap a photo and get an AI-powered explanation of your rights, next steps, and how to advocate for yourself — in over 10 languages.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-1.5">
             {[
@@ -411,19 +410,19 @@ export default function Home() {
           <>
             <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <PersonaCard
-                icon="🌍"
-                title="Immigrants & newcomers"
-                desc="Government letters feel impossible when English isn't your first language. We translate every word and tell you exactly what to do."
+                icon="⚖️"
+                title="Immigrants & Newcomers"
+                desc="Government letters feel impossible when English isn't your first language. We translate every word, explain your legal rights, and empower you to advocate for yourself."
               />
               <PersonaCard
-                icon="👴"
-                title="Seniors & elderly"
-                desc="Medical bills, Medicare notices, Social Security letters — in plain language you can actually understand and act on."
+                icon="🛡️"
+                title="Seniors & Vulnerable Populations"
+                desc="Medical bills, Medicare notices, Social Security letters — we identify scams, explain your rights, and help you navigate complex systems with confidence."
               />
               <PersonaCard
-                icon="👨‍👩‍👧"
-                title="Families & students"
-                desc="School forms, housing notices, legal letters — we cut through the jargon so you know exactly what's needed."
+                icon="📋"
+                title="Families & Students"
+                desc="School forms, housing notices, legal letters — we cut through the jargon, identify your rights, and help you take action when decisions feel unfair."
               />
             </div>
             <HowItWorks />
@@ -609,7 +608,7 @@ export default function Home() {
 
             {/* ① Understand */}
             <div className="space-y-4">
-              <SectionHeader n={1} title="Understand it" />
+              <SectionHeader n={1} title="Understand Your Rights" />
 
               <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-center gap-2">
@@ -661,6 +660,20 @@ export default function Home() {
                 </div>
               </div>
 
+              {result.userRights.length > 0 && (
+                <div className="ttf-fade-in rounded-2xl border border-emerald-300 bg-emerald-50 p-4">
+                  <p className="font-semibold text-emerald-900">⚖️ Your Legal Rights</p>
+                  <ul className="mt-2 space-y-1 text-emerald-900">
+                    {result.userRights.map((right, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-emerald-600">✓</span>
+                        <span>{right}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {result.deadline && (
                 <div className="ttf-fade-in rounded-2xl border border-amber-300 bg-amber-50 p-4">
                   <p className="font-semibold text-amber-900">📅 Important date</p>
@@ -683,7 +696,7 @@ export default function Home() {
             {/* ② Take action */}
             {hasActions && (
               <div className="space-y-4">
-                <SectionHeader n={2} title="Take action" />
+                <SectionHeader n={2} title="Build Your Advocacy Plan" />
 
                 {result.nextSteps.length > 0 && (
                   <div className="ttf-fade-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -872,7 +885,7 @@ export default function Home() {
 
             {/* ③ Talk it through & get help */}
             <div className="space-y-4">
-              <SectionHeader n={3} title="Talk it through & get help" />
+              <SectionHeader n={3} title="Practice & Get Support" />
 
               <Assistant
                 context={{

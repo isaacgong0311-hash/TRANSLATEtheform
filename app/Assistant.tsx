@@ -182,9 +182,9 @@ export default function Assistant({
             <SparkIcon />
           </span>
           <div>
-            <h2 className="text-lg font-bold leading-tight text-slate-900">Talk it through</h2>
+            <h2 className="text-lg font-bold leading-tight text-slate-900">Advocacy Rehearsal Room</h2>
             <p className="text-xs text-slate-500">
-              Ask about your letter, or rehearse the call out loud — in your language.
+              Ask about your rights, or practice your advocacy call out loud — in your language.
             </p>
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function Assistant({
               mode === "ask" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"
             }`}
           >
-            💬 Ask a question
+            ❓ Ask About Rights
           </button>
           <button
             role="tab"
@@ -208,12 +208,12 @@ export default function Assistant({
               mode === "practice" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"
             }`}
           >
-            📞 Practice the call
+            🌟 Practice Advocacy
           </button>
         </div>
         {mode === "practice" && (
           <p className="mt-2 text-xs text-indigo-700">
-            Practice space — you&apos;re talking to a pretend clerk so the real call feels easy.
+            Advocacy rehearsal — practice your case with a simulated official so you feel confident and prepared.
           </p>
         )}
       </div>
