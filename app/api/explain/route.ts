@@ -119,9 +119,6 @@ const ResultSchema = z.object({
   crisisMessage: z
     .string()
     .describe("If isCrisis is true, a short message telling the reader to seek immediate human help. Otherwise empty."),
-  userRights: z
-    .array(z.string())
-    .describe("List of specific legal rights or procedural protections the reader has in this situation, based on the document type and context. E.g., 'Right to appeal within 30 days', 'Right to request a hearing', 'Right to legal representation'. Empty if no clear rights are identifiable."),
 });
 
 // A compact, human-readable description of the exact JSON the model must emit.
@@ -154,8 +151,7 @@ const JSON_SHAPE = `{
   "isPossibleScam": boolean,
   "scamSigns": string[],             // specific warning signs if isPossibleScam, else []
   "isCrisis": boolean,
-  "crisisMessage": string,           // message to seek immediate help if isCrisis, else ""
-  "userRights": string[]             // specific legal rights or protections; [] if none identifiable
+  "crisisMessage": string            // message to seek immediate help if isCrisis, else ""
 }`;
 
 // Strip code fences then use bracket-counting to find the outermost {...}.
@@ -241,9 +237,6 @@ export async function POST(req: Request) {
             "- The phone script must be polite, simple, and something a nervous, non-native speaker could read aloud.",
             "- The responseLetter.body must be written in ENGLISH (the receiving office reads English), even though everything else is in the chosen language. Only fill in facts visible in the document; use [bracketed blanks] for anything the reader must supply. Set applicable to false (and use empty strings) when no written reply makes sense.",
             "- documentChecklist items must be real documents the letter implies the reader needs; never pad the list.",
-            "- userRights should identify specific legal protections, appeal rights, or procedural safeguards the reader has based on the document type and jurisdiction (when identifiable). Be specific and cite actual rights when possible.",
-            "",
-            "IMPORTANT: Include 'userRights' in your JSON — this is a key differentiator for advocacy-focused analysis.",
             "",
             "Respond with ONLY a single valid JSON object — no markdown, no code fences, no text before or after. Use EXACTLY these keys and value types:",
             JSON_SHAPE,
