@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
+  --background: #eef1f8;
   --foreground: #0f172a;
 }
 
@@ -23,12 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   letter-spacing: -0.011em;
-  /* Calm, trustworthy gradient — kept subtle for a clean, uncluttered feel. */
-  background:
-    radial-gradient(48rem 48rem at 108% -12%, #e7f0ff 0%, transparent 60%),
-    radial-gradient(42rem 42rem at -12% 108%, #e7faf2 0%, transparent 60%),
-    var(--background);
-  background-attachment: fixed;
+  background: var(--background);
 }
 
 ::selection {

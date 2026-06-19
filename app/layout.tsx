@@ -19,9 +19,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Translate the Form",
+  title: "Lantern",
   description:
-    "Snap a photo of any confusing official letter and find out what it means and what to do next — in your language.",
+    "Take a photo of any confusing letter and get a plain-language explanation, next steps, and help — in your language.",
 };
 
 export default function RootLayout({

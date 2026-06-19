@@ -125,7 +125,7 @@ function buildIcs(dateISO: string, summary: string): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Translate the Form//EN",
+    "PRODID:-//Lantern//EN",
     "BEGIN:VEVENT",
     `UID:${stamp}-translateform@local`,
     `DTSTAMP:${stamp}`,
@@ -475,79 +475,57 @@ export default function Home() {
         <div className="h-1.5 w-full bg-red-500" aria-hidden="true" />
       )}
 
-      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-4">
+      <header className="sticky top-0 z-20 border-b border-slate-200/60 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-3.5">
           <Logo />
           <div className="min-w-0">
-            <p className="text-lg font-bold leading-tight tracking-tight text-slate-900">
-              Translate the Form
-            </p>
-            <p className="truncate text-xs text-slate-500">
-              Understand any letter. Know what to do next.
-            </p>
+            <p className="text-base font-bold leading-tight tracking-tight text-slate-900">Lantern</p>
+            <p className="truncate text-xs text-slate-500">Understand any letter. Know what to do next.</p>
           </div>
           <div className="ms-auto flex items-center gap-1.5">
-            <button
-              onClick={toggleLT}
-              aria-pressed={largeText}
-              title="Large text"
-              className={`rounded-lg border px-2 py-1 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${largeText ? "border-blue-400 bg-blue-100 text-blue-800" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100"}`}
-            >
-              A+
-            </button>
-            <button
-              onClick={toggleHC}
-              aria-pressed={highContrast}
-              title="High contrast"
-              className={`rounded-lg border px-2 py-1 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${highContrast ? "border-blue-400 bg-blue-100 text-blue-800" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100"}`}
-            >
-              ◐
-            </button>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+            <button onClick={toggleLT} aria-pressed={largeText} title="Large text" className={`rounded-lg border px-2 py-1 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${largeText ? "border-blue-400 bg-blue-100 text-blue-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>A+</button>
+            <button onClick={toggleHC} aria-pressed={highContrast} title="High contrast" className={`rounded-lg border px-2 py-1 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${highContrast ? "border-blue-400 bg-blue-100 text-blue-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>◐</button>
+            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 ring-1 ring-teal-200">
               <LockIcon /> Private
             </span>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-5">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6">
 
         {/* ── Landing page ──────────────────────────────────── */}
         {screen === "home" && (
-          <div className="flex min-h-[calc(100vh-72px)] flex-col justify-between py-10">
+          <div className="py-12">
+            {/* Hero */}
             <div className="flex flex-col items-center text-center">
-              {/* badge */}
-              <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Free · Private · 10+ languages
+              <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-orange-400" /> Free · Private · 10+ languages
               </span>
 
-              {/* headline */}
-              <h1 className="max-w-md text-balance text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-6xl" style={{ fontFamily: "var(--font-playfair), serif" }}>
-                Confused by<br />
-                <em className="not-italic text-blue-700">a letter?</em><br />
-                We&apos;ll explain it.
+              <h1 className="max-w-lg text-balance text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-6xl" style={{ fontFamily: "var(--font-playfair), serif" }}>
+                Confused by a letter?<br />
+                <em className="not-italic text-blue-600">We&apos;ll explain it.</em>
               </h1>
 
-              <p className="mx-auto mt-4 max-w-sm text-pretty text-base leading-relaxed text-slate-600">
-                For immigrants, seniors, and families navigating confusing official
-                letters — take a photo and we&apos;ll explain it in plain language,
-                warn you of scams, and even rehearse the phone call with you.
+              <p className="mx-auto mt-5 max-w-md text-pretty text-base leading-relaxed text-slate-500">
+                For immigrants, seniors, and families navigating confusing official letters — take a photo and we&apos;ll explain it in plain language, warn you of scams, and even rehearse the phone call with you.
               </p>
 
               {/* demo card */}
-              <div className="mt-7 w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+              <div className="mt-8 w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-red-700">
+                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-red-700">
                     {DEMO_ITEMS[demoIdx].label}
                   </span>
                   <span className="text-xs font-semibold text-emerald-600">✓ Plain language</span>
                 </div>
-                <div className="p-4">
+                <div className="p-5">
                   <p className="text-sm leading-relaxed text-slate-400 line-through decoration-slate-300">
                     {DEMO_ITEMS[demoIdx].original}
                   </p>
                   <div className="my-3 flex justify-center">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm">↓</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">↓</span>
                   </div>
                   <p className="text-sm font-medium leading-relaxed text-slate-900">
                     {DEMO_ITEMS[demoIdx].translated}
@@ -556,12 +534,7 @@ export default function Home() {
                 <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
                   <div className="flex gap-1.5">
                     {DEMO_ITEMS.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setDemoIdx(i)}
-                        className={`h-1.5 rounded-full transition-all ${i === demoIdx ? "w-5 bg-blue-600" : "w-1.5 bg-slate-300"}`}
-                        aria-label={`Demo ${i + 1}`}
-                      />
+                      <button key={i} onClick={() => setDemoIdx(i)} className={`h-1.5 rounded-full transition-all ${i === demoIdx ? "w-5 bg-blue-600" : "w-1.5 bg-slate-300"}`} aria-label={`Demo ${i + 1}`} />
                     ))}
                   </div>
                   <span className="text-xs font-medium text-emerald-600">✓ Nothing stored</span>
@@ -569,7 +542,7 @@ export default function Home() {
               </div>
 
               {/* stats */}
-              <div className="mt-6 flex w-full max-w-sm divide-x divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+              <div className="mt-6 flex w-full max-w-md divide-x divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
                 {[["10+", "languages"], ["16", "verified programs"], ["0", "data stored"]].map(([n, l]) => (
                   <div key={l} className="flex-1 py-4">
                     <p className="text-xl font-bold text-blue-700">{n}</p>
@@ -579,41 +552,74 @@ export default function Home() {
               </div>
 
               {/* social proof */}
-              <p className="mt-4 max-w-xs text-center text-xs text-slate-500">
-                About 1 in 5 people who qualify for the Earned Income Tax Credit never claim it —
-                often because the paperwork is confusing.{" "}
+              <p className="mt-4 max-w-sm text-center text-xs text-slate-500">
+                About 1 in 5 people who qualify for the Earned Income Tax Credit never claim it — often because the paperwork is confusing.{" "}
                 <a href="https://www.irs.gov/credits-deductions/individuals/earned-income-tax-credit-eitc" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 underline underline-offset-2">IRS</a>
               </p>
 
               {/* category chips */}
-              <div className="mt-5 flex flex-wrap justify-center gap-1.5">
-                {["Medical bill", "Benefits letter", "Utility notice", "School form", "Legal notice", "Immigration letter"].map((ex) => (
-                  <span key={ex} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{ex}</span>
+              <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                {["Medical bill", "Benefits letter", "Utility notice", "School form", "Legal notice", "Immigration letter"].map((ex, i, arr) => (
+                  <span key={ex} className="flex items-center gap-4">
+                    {ex}
+                    {i < arr.length - 1 && <span className="text-slate-300">|</span>}
+                  </span>
                 ))}
               </div>
             </div>
 
             {/* CTAs */}
             <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                onClick={() => setScreen("app")}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-              >
+              <button onClick={() => setScreen("app")} className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 📄 I got a confusing letter
               </button>
-              <button
-                onClick={() => setScreen("app")}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-              >
+              <button onClick={() => setScreen("app")} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 ⊙ I need help, not sure what
               </button>
+            </div>
+
+            {/* Persona cards */}
+            <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[
+                { icon: "🌐", title: "Immigrants & newcomers", desc: "Government letters feel impossible when English isn't your first language. We translate every word and tell you exactly what to do." },
+                { icon: "👴", title: "Seniors & elderly", desc: "Medical bills, Medicare notices, Social Security letters — in plain language you can actually understand and act on." },
+                { icon: "👨‍👩‍👧", title: "Families & students", desc: "School forms, housing notices, legal letters — we cut through the jargon so you know exactly what's needed." },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-xl">{icon}</span>
+                  <h3 className="mt-3 font-bold text-slate-900">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* How It Works */}
+            <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="mb-5 text-xs font-bold uppercase tracking-widest text-slate-400">How it works</p>
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                {[
+                  { icon: "📸", n: 1, label: "Take a photo", desc: "Snap or upload any letter, bill, or notice — up to 10 MB." },
+                  { icon: "🤖", n: 2, label: "AI reads it", desc: "Extracts every date, name, amount, and warning sign." },
+                  { icon: "🌐", n: 3, label: "Plain language", desc: "Explains what it means in 10+ languages." },
+                  { icon: "✅", n: 4, label: "Know what to do", desc: "Checklist, reply letter, and phone script — all ready." },
+                ].map(({ icon, n, label, desc }) => (
+                  <div key={n} className="flex flex-col items-center text-center">
+                    <div className="relative">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl text-white">{icon}</span>
+                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-400 text-[10px] font-bold text-white">{n}</span>
+                    </div>
+                    <p className="mt-2.5 text-sm font-semibold text-slate-800">{label}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{desc}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* ── App (upload + results) ─────────────────────────── */}
         {screen === "app" && (
-        <div className="py-8">
+        <div className="py-8 max-w-2xl mx-auto">
         <button
           onClick={() => { reset(); setScreen("home"); }}
           className="mb-5 flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 focus-visible:outline-none"
@@ -1185,8 +1191,8 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="mt-8 border-t border-slate-200/70 bg-white/50 py-5 print:hidden">
-        <div className="mx-auto max-w-2xl space-y-3 px-5">
+      <footer className="mt-8 border-t border-slate-200/60 bg-white/70 py-5 print:hidden">
+        <div className="mx-auto max-w-3xl space-y-3 px-6">
           <div className="text-center text-xs text-slate-500">
             This tool helps you understand a letter — it is not legal or official
             advice. Always confirm with the office named on your document.
@@ -1537,24 +1543,13 @@ function Spinner() {
 function Logo() {
   return (
     <span
-      className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 text-white shadow-sm"
+      className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm"
       aria-hidden="true"
     >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M6 3h8l4 4v14H6z"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-        />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M6 3h8l4 4v14H6z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
         <path d="M14 3v4h4" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        <path
-          d="M8.5 12.5l2 2 4-4.5"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <path d="M8.5 12.5l2 2 4-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
   );
