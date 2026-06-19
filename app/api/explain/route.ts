@@ -5,6 +5,9 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+// We never persist the uploaded image. It lives only in memory for the
+// duration of this request, then is discarded when the function returns.
+
 const ResultSchema = z.object({
   documentType: z
     .string()
@@ -51,6 +54,31 @@ const ResultSchema = z.object({
   whatTheyNeed: z
     .array(z.string())
     .describe("Concrete things this document is asking the reader to provide or do. Empty if none."),
+  documentChecklist: z
+    .array(
+      z.object({
+        item: z.string().describe("A specific document or item to gather, e.g. 'Pay stubs from the last 30 days'."),
+        why: z.string().describe("One short phrase on why it is needed, in the chosen language."),
+      }),
+    )
+    .describe(
+      "A practical checklist of documents/items the reader should gather to respond. Only include items the letter actually implies. Empty if none.",
+    ),
+  responseLetter: z
+    .object({
+      applicable: z
+        .boolean()
+        .describe("True only if a written reply (appeal, response, or request) would genuinely help the reader respond to this letter."),
+      kind: z
+        .string()
+        .describe("Short label for the letter type in the chosen language, e.g. 'Appeal letter' or 'Response letter'. Empty if not applicable."),
+      body: z
+        .string()
+        .describe(
+          "If applicable, a complete, ready-to-send formal letter WRITTEN IN ENGLISH (because the receiving office reads English), filled in with the sender/case number/details visible in the document. Use clearly marked blanks like [Your full name], [Your address], [Today's date] for anything the reader must add. Polite, concise, and correctly structured (date, recipient, subject, body, sign-off). Empty string if not applicable.",
+        ),
+    })
+    .describe("A generated written reply the reader can print, sign, and send."),
   nextSteps: z
     .array(
       z.object({
@@ -71,6 +99,7 @@ const ResultSchema = z.object({
   deadlineISO: z
     .string()
     .nullable()
+    .transform((v) => (/^\d{4}-\d{2}-\d{2}$/.test(v ?? "") ? v : null))
     .describe(
       "The deadline as a YYYY-MM-DD date ONLY if a full, unambiguous date is clearly visible in the document. Otherwise null. Never guess or calculate.",
     ),
@@ -82,11 +111,6 @@ const ResultSchema = z.object({
   scamSigns: z
     .array(z.string())
     .describe("If isPossibleScam is true, the specific warning signs you noticed. Otherwise empty."),
-  scamAgencyFacts: z
-    .string()
-    .describe(
-      "If isPossibleScam is true: state briefly what the REAL agency would and would NOT do (e.g. 'The real IRS sends letters by mail first and never demands gift cards or wire transfers. Call the real IRS at 1-800-829-1040 to verify.'). Empty string if not a scam.",
-    ),
   isCrisis: z
     .boolean()
     .describe(
@@ -95,6 +119,11 @@ const ResultSchema = z.object({
   crisisMessage: z
     .string()
     .describe("If isCrisis is true, a short message telling the reader to seek immediate human help. Otherwise empty."),
+  scamAgencyFacts: z
+    .string()
+    .describe(
+      "If isPossibleScam is true: briefly state what the REAL agency would and would NOT do (e.g. 'The real IRS sends letters by mail first and never demands gift cards or wire transfers. Call the real IRS at 1-800-829-1040 to verify.'). Empty string if not a scam.",
+    ),
   whatHappensIfNothing: z
     .string()
     .describe(
@@ -114,45 +143,68 @@ const ResultSchema = z.object({
     ),
 });
 
+// A compact, human-readable description of the exact JSON the model must emit.
+// We describe the shape in the prompt (rather than relying on Groq's structured
+// output mode) because Llama 4 Scout echoes the JSON Schema back instead of data.
 const JSON_SHAPE = `{
-  "documentType": string,
+  "documentType": string,            // short label, e.g. "Medicaid denial letter"
   "category": one of "housing" | "healthcare" | "benefits" | "utilities" | "legal" | "school" | "financial" | "immigration" | "other",
-  "confidence": number 0-100,
-  "whyThisType": string,
+  "confidence": number 0-100,        // be honest; lower it when blurry/cut off/ambiguous
+  "whyThisType": string,             // one sentence citing specific words/features you saw
   "urgency": one of "low" | "medium" | "high",
-  "meaning": string,
+  "meaning": string,                 // plain-language explanation of what the letter means
   "keyDetails": {
     "sender": string or null,
     "contactPhone": string or null,
     "accountNumber": string or null,
     "amountDue": string or null
   },
-  "whatTheyNeed": string[],
+  "whatTheyNeed": string[],          // things the reader must provide/do; [] if none
+  "documentChecklist": [ { "item": string, "why": string } ],  // documents/items to gather; [] if none. "why" in the chosen language
+  "responseLetter": {
+    "applicable": boolean,           // true only if a written reply would genuinely help
+    "kind": string,                  // e.g. "Appeal letter" (in chosen language); "" if not applicable
+    "body": string                   // a complete ready-to-send letter IN ENGLISH, filled with visible details, using [bracketed blanks] for what the reader must add; "" if not applicable
+  },
   "nextSteps": [ { "step": string, "detail": string } ],
-  "phoneScript": string,
-  "deadline": string or null,
-  "deadlineISO": string or null,
+  "phoneScript": string,             // polite 2-4 sentence call script, or "" if no call needed
+  "deadline": string or null,        // copied exactly as written, or null
+  "deadlineISO": string or null,     // "YYYY-MM-DD" only if a full unambiguous date is visible, else null
   "isPossibleScam": boolean,
-  "scamSigns": string[],
-  "scamAgencyFacts": string,
+  "scamSigns": string[],             // specific warning signs if isPossibleScam, else []
   "isCrisis": boolean,
-  "crisisMessage": string,
-  "whatHappensIfNothing": string,
-  "photoQualityNote": string or null,
-  "detectedLetterLanguage": string or null
+  "crisisMessage": string,           // message to seek immediate help if isCrisis, else ""
+  "scamAgencyFacts": string,         // if scam: what the REAL agency does/doesn't do; else ""
+  "whatHappensIfNothing": string,    // calm 1-2 sentence consequence of inaction; "" if no action needed
+  "photoQualityNote": string or null, // one sentence photo problem if hard to read; null if fine
+  "detectedLetterLanguage": string or null  // language the letter is written in; null if unclear
 }`;
 
+// Strip code fences then use bracket-counting to find the outermost {...}.
+// lastIndexOf("}") is unreliable when the model appends prose after the JSON.
 function extractJson(text: string): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end < start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
+  const candidate = (fenced ? fenced[1] : text).trim();
+
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        try {
+          return JSON.parse(candidate.slice(start, i + 1));
+        } catch {
+          start = -1; // try next object if any
+        }
+      }
+    }
   }
+  return null;
 }
 
 export async function POST(req: Request) {
@@ -187,32 +239,36 @@ export async function POST(req: Request) {
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   try {
+    // Llama 4 Scout on Groq mishandles json_schema/structured-output mode (it
+    // echoes the schema instead of data). So we use plain text generation with
+    // an explicit JSON-shape instruction, then parse and validate with Zod here.
     const { text } = await generateText({
       model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
       messages: [
         {
           role: "system",
           content: [
-            "You help people understand confusing official letters and forms (government benefits, healthcare, housing, school, legal, immigration).",
+            "You help people understand confusing official letters and forms (government benefits, healthcare, housing, school, legal).",
             "Many readers are stressed, low-literacy, or non-native speakers. Be calm, clear, and kind.",
             `Write ALL human-readable output (meaning, steps, scripts, reasons) in ${language}, at a ${
-              simplify
-                ? "very simple 3rd-grade reading level — use the shortest, most common words and very short sentences"
-                : "6th-grade reading level"
+              simplify ? "very simple 3rd-grade reading level — use the shortest, most common words and very short sentences" : "6th-grade reading level"
             }. Keep copied facts like names, numbers, and dates exactly as printed.`,
             "Rules you must follow:",
-            "- Never invent facts, deadlines, program names, phone numbers, or account numbers not visible in the document.",
-            "- If something is unclear or cut off, say so plainly and lower your confidence score.",
-            "- Never state that the reader definitely qualifies or is denied benefits — explain what the letter says and tell them to confirm.",
-            "- Copy deadlines, dates, amounts, and account numbers exactly as written; never calculate or assume them.",
-            "- Only set deadlineISO when a complete, unambiguous calendar date is visible. Relative terms ('within 10 days') → deadlineISO null.",
-            "- For scam detection, only flag real warning signs you can see. For scamAgencyFacts, cite what the REAL agency does vs. the scam tactic.",
-            "- Hard fallback: if the letter involves eviction, ICE/immigration enforcement, medical emergency, or utility shutoff within 48 hours, set isCrisis true and give the hotline in crisisMessage.",
-            "- The phone script must be polite, simple, and readable aloud by a nervous non-native speaker.",
-            "- For whatHappensIfNothing: be factual and calm — 'Your account may be closed' not 'You will lose everything'.",
-            "- For photoQualityNote: only flag if the photo prevents you from reading key parts. null if acceptable.",
+            "- Never invent facts, deadlines, program names, phone numbers, or account numbers that are not visible in the document.",
+            "- If something is unclear or cut off, say so plainly instead of guessing, and lower your confidence score.",
+            "- Never state that the reader definitely qualifies or is definitely denied benefits — explain what the letter says and tell them to confirm with the listed office.",
+            "- Copy deadlines, dates, amounts, and account numbers exactly as written; do not calculate or assume them.",
+            "- Only set deadlineISO when a complete, unambiguous calendar date is visible. If only a relative term like 'within 10 days' appears, leave deadlineISO null.",
+            "- For scam detection, only flag real warning signs you can see; do not accuse legitimate official letters of being scams. When unsure, set isPossibleScam to false but you may still mention caution in a next step.",
+            "- The phone script must be polite, simple, and something a nervous, non-native speaker could read aloud.",
+            "- The responseLetter.body must be written in ENGLISH (the receiving office reads English), even though everything else is in the chosen language. Only fill in facts visible in the document; use [bracketed blanks] for anything the reader must supply. Set applicable to false (and use empty strings) when no written reply makes sense.",
+            "- documentChecklist items must be real documents the letter implies the reader needs; never pad the list.",
+            "- Hard fallback: if the letter involves eviction, ICE/immigration enforcement, medical emergency, or utility shutoff within 48 hours, always set isCrisis true and include the relevant hotline in crisisMessage.",
+            "- For scamAgencyFacts: cite what the REAL agency does vs. the scam tactic shown in the letter. Include the real contact number or .gov URL if known.",
+            "- For whatHappensIfNothing: be factual and calm — 'Your account may be closed' not 'You will lose everything'. Empty string if no action is required at all.",
+            "- For photoQualityNote: only flag if the photo prevents reading key parts. null if acceptable quality.",
             "",
-            "Respond with ONLY a single valid JSON object — no markdown, no code fences, no text before or after:",
+            "Respond with ONLY a single valid JSON object — no markdown, no code fences, no text before or after. Use EXACTLY these keys and value types:",
             JSON_SHAPE,
           ].join("\n"),
         },

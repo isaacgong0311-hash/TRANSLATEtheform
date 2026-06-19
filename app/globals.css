@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f8fb;
+  --background: #f8fafc;
   --foreground: #0f172a;
 }
 
@@ -21,11 +21,34 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
+  /* Calm, trustworthy gradient — kept subtle for a clean, uncluttered feel. */
   background:
-    radial-gradient(60rem 60rem at 110% -10%, #e0f2fe 0%, transparent 55%),
-    radial-gradient(50rem 50rem at -10% 110%, #d1fae5 0%, transparent 55%),
+    radial-gradient(48rem 48rem at 108% -12%, #e7f0ff 0%, transparent 60%),
+    radial-gradient(42rem 42rem at -12% 108%, #e7faf2 0%, transparent 60%),
     var(--background);
   background-attachment: fixed;
+}
+
+::selection {
+  background: #c7d7fe;
+}
+
+/* Quiet, modern scrollbars (used in the chat and letter preview). */
+.ttf-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.ttf-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.ttf-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.ttf-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* ── High contrast mode ───────────────────────────────────────── */
@@ -118,10 +141,6 @@ body {
 
 /* ── Print / Save as PDF ─────────────────────────────────────── */
 @media print {
-  .print\:hidden {
-    display: none !important;
-  }
-
   body {
     background: white !important;
     font-size: 12pt;
@@ -150,24 +169,18 @@ body {
     box-shadow: none !important;
   }
 
-  .space-y-4 > * + *,
-  .space-y-5 > * + * {
-    margin-top: 12pt !important;
-  }
-
   a[href]::after {
     content: " (" attr(href) ")";
     font-size: 9pt;
     color: #555;
   }
 
-  /* Keep action buttons hidden in print */
   button {
     display: none !important;
   }
 }
 
-/* ── Animations ──────────────────────────────────────────────── */
+/* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
