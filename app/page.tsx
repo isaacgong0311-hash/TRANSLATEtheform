@@ -166,6 +166,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
   const [screen, setScreen] = useState<"home" | "app">("home");
   const [demoIdx, setDemoIdx] = useState(0);
+  const [formTab, setFormTab] = useState<0 | 1 | 2>(0);
   const previewUrl = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -620,167 +621,161 @@ export default function Home() {
           ← Back
         </button>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.02]">
-          <label
-            htmlFor="language"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
-            Show me the explanation in
-          </label>
-          <select
-            id="language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="mb-4 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.bcp47} value={l.label}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            How simple should the words be?
-          </span>
-          <div
-            role="group"
-            aria-label="Reading level"
-            className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"
-          >
-            <button
-              type="button"
-              onClick={() => setSimplify(false)}
-              aria-pressed={!simplify}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
-                !simplify ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
-              }`}
-            >
-              Normal
-            </button>
-            <button
-              type="button"
-              onClick={() => setSimplify(true)}
-              aria-pressed={simplify}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
-                simplify ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
-              }`}
-            >
-              Extra simple
-            </button>
-          </div>
-
-          {!preview && (
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center transition hover:border-blue-500 hover:bg-blue-50 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-600">
-              <CameraIcon />
-              <span className="mt-3 text-base font-semibold text-slate-800">
-                Take a photo or upload your letter
-              </span>
-              <span className="mt-1 text-sm text-slate-500">
-                JPG or PNG, up to 10&nbsp;MB
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={onPick}
-                className="sr-only"
-                aria-label="Take a photo or upload a picture of your letter"
-              />
-            </label>
-          )}
-
-          {!preview && (
-            <div className="mt-3 text-center">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/[0.02]">
+          {/* Form tab bar */}
+          <div className="flex border-b border-slate-200" role="tablist">
+            {([
+              { label: "📄 Upload", i: 0 },
+              { label: "⚙️ Options", i: 1 },
+              { label: "🔒 Privacy", i: 2 },
+            ] as const).map(({ label, i }) => (
               <button
-                type="button"
-                onClick={loadSample}
-                className="text-sm font-medium text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                key={i}
+                role="tab"
+                aria-selected={formTab === i}
+                onClick={() => setFormTab(i)}
+                className={`flex-1 px-3 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${
+                  formTab === i
+                    ? "border-b-2 border-blue-600 text-blue-700"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
               >
-                Don&apos;t have a letter? Try a sample
+                {label}
               </button>
-            </div>
-          )}
-
-          {preview && (
-            <div className="space-y-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview}
-                alt="The letter you uploaded"
-                className="max-h-72 w-full rounded-xl border border-slate-200 object-contain"
-              />
-              {photoQuality === "dark" && (
-                <div role="alert" className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  <span aria-hidden="true">⚠️</span>
-                  Your photo looks dark or blurry. For best results, retake it in bright light with the letter flat.
-                </div>
-              )}
-              <div className="flex gap-3">
-                <button
-                  onClick={explain}
-                  disabled={loading}
-                  aria-busy={loading}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {loading ? (
-                    <>
-                      <Spinner /> {LOADING_STEPS[loadingMsg].label}…
-                    </>
-                  ) : (
-                    "Explain this letter"
-                  )}
-                </button>
-                <button
-                  onClick={reset}
-                  disabled={loading}
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-60"
-                >
-                  New photo
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-4 flex items-center gap-2">
-            <label htmlFor="zip" className="shrink-0 text-sm font-medium text-slate-700">ZIP code</label>
-            <input
-              id="zip"
-              type="text"
-              inputMode="numeric"
-              maxLength={5}
-              value={zip}
-              onChange={(e) => setZip(e.target.value.replace(/\D/g, ""))}
-              placeholder="Optional — for local help"
-              className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-            />
+            ))}
           </div>
 
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => setPrivacyOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-              aria-expanded={privacyOpen}
-            >
-              <span className="flex items-center gap-2"><LockIcon /> How we protect your privacy</span>
-              <svg className={`h-4 w-4 text-slate-400 transition-transform ${privacyOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            {privacyOpen && (
-              <ol className="mt-2 list-decimal space-y-1 ps-5 text-xs text-slate-600">
-                <li>Your photo is sent directly to the AI model over an encrypted connection.</li>
-                <li>We never store your photo, letter text, or results on any server.</li>
-                <li>No account or sign-in is required — we don&apos;t know who you are.</li>
-                <li>Nothing is shared with advertisers or third parties.</li>
-                <li>The AI is used only to read the document you upload, nothing else.</li>
-                <li>You can close this page at any time — nothing persists after you leave.</li>
-              </ol>
+          <div className="p-5">
+            {/* Tab 0 — Upload */}
+            {formTab === 0 && (
+              <div className="space-y-4">
+                {!preview && (
+                  <>
+                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center transition hover:border-blue-500 hover:bg-blue-50 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-600">
+                      <CameraIcon />
+                      <span className="mt-3 text-base font-semibold text-slate-800">Take a photo or upload your letter</span>
+                      <span className="mt-1 text-sm text-slate-500">JPG or PNG, up to 10 MB</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={onPick}
+                        className="sr-only"
+                        aria-label="Take a photo or upload a picture of your letter"
+                      />
+                    </label>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={loadSample}
+                        className="text-sm font-medium text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                      >
+                        Don&apos;t have a letter? Try a sample
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {preview && (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={preview}
+                      alt="The letter you uploaded"
+                      className="max-h-64 w-full rounded-xl border border-slate-200 object-contain"
+                    />
+                    {photoQuality === "dark" && (
+                      <div role="alert" className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        <span aria-hidden="true">⚠️</span>
+                        Photo looks dark. Retake in bright light for best results.
+                      </div>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={explain}
+                        disabled={loading}
+                        aria-busy={loading}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {loading ? <><Spinner /> {LOADING_STEPS[loadingMsg].label}…</> : "Explain this letter"}
+                      </button>
+                      <button
+                        onClick={reset}
+                        disabled={loading}
+                        className="rounded-xl border border-slate-300 px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-60"
+                      >
+                        New photo
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Tab 1 — Options */}
+            {formTab === 1 && (
+              <div className="space-y-5">
+                <div>
+                  <label htmlFor="language" className="mb-1.5 block text-sm font-medium text-slate-700">Explain in this language</label>
+                  <select
+                    id="language"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  >
+                    {LANGUAGES.map((l) => (
+                      <option key={l.bcp47} value={l.label}>{l.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <span className="mb-1.5 block text-sm font-medium text-slate-700">Reading level</span>
+                  <div role="group" aria-label="Reading level" className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+                    <button type="button" onClick={() => setSimplify(false)} aria-pressed={!simplify} className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${!simplify ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}>Normal</button>
+                    <button type="button" onClick={() => setSimplify(true)} aria-pressed={simplify} className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${simplify ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}>Extra simple</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="zip" className="mb-1.5 block text-sm font-medium text-slate-700">ZIP code <span className="font-normal text-slate-400">(optional — for local help)</span></label>
+                  <input
+                    id="zip"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value.replace(/\D/g, ""))}
+                    placeholder="e.g. 90210"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
+                  <LockIcon />
+                  <span>Settings apply to your next explanation. Nothing is stored between visits.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2 — Privacy */}
+            {formTab === 2 && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-slate-800">How we protect your privacy</p>
+                <ol className="list-decimal space-y-2 ps-5 text-sm text-slate-600">
+                  <li>Your photo travels directly to the AI model over an encrypted connection.</li>
+                  <li>We never store your photo, letter text, or analysis on any server.</li>
+                  <li>No account or sign-in needed — we don&apos;t know who you are.</li>
+                  <li>Nothing is shared with advertisers or third parties.</li>
+                  <li>The AI only sees the document you upload — nothing else.</li>
+                  <li>Close this tab at any time and nothing persists.</li>
+                </ol>
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-800">
+                  <LockIcon /> Zero data stored · End-to-end encrypted · No account
+                </div>
+              </div>
             )}
           </div>
-
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
-            <LockIcon /> Your photo is read once and never saved or stored.
-          </p>
         </div>
 
         {/* Visual progress steps */}
