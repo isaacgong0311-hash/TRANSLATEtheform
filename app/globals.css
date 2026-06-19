@@ -21,7 +21,6 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Calm, trustworthy gradient that stays soft on the eyes. */
   background:
     radial-gradient(60rem 60rem at 110% -10%, #e0f2fe 0%, transparent 55%),
     radial-gradient(50rem 50rem at -10% 110%, #d1fae5 0%, transparent 55%),
@@ -29,7 +28,146 @@ body {
   background-attachment: fixed;
 }
 
-/* Respect users who prefer reduced motion. */
+/* ── High contrast mode ───────────────────────────────────────── */
+[data-hc="true"] body,
+[data-hc="true"] {
+  background: #fff !important;
+  color: #000 !important;
+}
+
+[data-hc="true"] .text-slate-400,
+[data-hc="true"] .text-slate-500,
+[data-hc="true"] .text-slate-600 {
+  color: #222 !important;
+}
+
+[data-hc="true"] .border-slate-100,
+[data-hc="true"] .border-slate-200,
+[data-hc="true"] .border-slate-200\/70 {
+  border-color: #555 !important;
+}
+
+[data-hc="true"] .bg-slate-50,
+[data-hc="true"] .bg-slate-100 {
+  background-color: #f0f0f0 !important;
+}
+
+[data-hc="true"] .text-blue-700,
+[data-hc="true"] .text-blue-800,
+[data-hc="true"] .text-blue-900 {
+  color: #003580 !important;
+}
+
+[data-hc="true"] .bg-blue-50 {
+  background-color: #dbe9ff !important;
+}
+
+[data-hc="true"] .text-amber-700,
+[data-hc="true"] .text-amber-800,
+[data-hc="true"] .text-amber-900 {
+  color: #7a4500 !important;
+}
+
+[data-hc="true"] .bg-amber-50 {
+  background-color: #fff0cc !important;
+}
+
+[data-hc="true"] .text-orange-800,
+[data-hc="true"] .text-orange-900 {
+  color: #7a2000 !important;
+}
+
+[data-hc="true"] .bg-orange-50 {
+  background-color: #ffe8d6 !important;
+}
+
+[data-hc="true"] .text-red-700,
+[data-hc="true"] .text-red-800 {
+  color: #8b0000 !important;
+}
+
+/* ── Large text mode ─────────────────────────────────────────── */
+[data-lt="true"] {
+  font-size: 1.125rem;
+}
+
+[data-lt="true"] .text-sm {
+  font-size: 1rem !important;
+  line-height: 1.6 !important;
+}
+
+[data-lt="true"] .text-xs {
+  font-size: 0.875rem !important;
+}
+
+[data-lt="true"] .text-base {
+  font-size: 1.2rem !important;
+  line-height: 1.7 !important;
+}
+
+[data-lt="true"] h1,
+[data-lt="true"] .text-2xl,
+[data-lt="true"] .text-3xl {
+  font-size: 2rem !important;
+}
+
+[data-lt="true"] h2,
+[data-lt="true"] .text-xl {
+  font-size: 1.5rem !important;
+}
+
+/* ── Print / Save as PDF ─────────────────────────────────────── */
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    font-size: 12pt;
+    color: #000;
+  }
+
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .rounded-2xl,
+  .rounded-xl,
+  .rounded-lg {
+    border-radius: 4px !important;
+  }
+
+  .shadow-sm,
+  .shadow-md {
+    box-shadow: none !important;
+  }
+
+  .space-y-4 > * + *,
+  .space-y-5 > * + * {
+    margin-top: 12pt !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #555;
+  }
+
+  /* Keep action buttons hidden in print */
+  button {
+    display: none !important;
+  }
+}
+
+/* ── Animations ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
