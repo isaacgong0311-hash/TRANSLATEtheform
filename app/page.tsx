@@ -79,6 +79,24 @@ const LOADING_MESSAGES = [
   "Writing your reply letter…",
 ];
 
+const DEMO_ITEMS = [
+  {
+    label: "IRS NOTICE",
+    original: "Failure to remit the balance due may result in a levy on your wages or federal payments.",
+    translated: "Pay what you owe, or the IRS may start taking money from your paycheck or benefits. You can set up a payment plan instead.",
+  },
+  {
+    label: "BENEFITS LETTER",
+    original: "Your application for Supplemental Nutrition Assistance Program benefits has been denied pursuant to 7 CFR 273.2(f).",
+    translated: "Your food stamp application was turned down. You have the right to appeal — a letter to request a hearing is ready for you.",
+  },
+  {
+    label: "UTILITY NOTICE",
+    original: "Pursuant to tariff regulations, service disconnection will be effectuated within 10 business days absent payment remittance.",
+    translated: "Your electricity will be shut off in about 2 weeks if you don't pay. Call your utility or dial 211 — help paying bills may be available.",
+  },
+];
+
 function buildIcs(dateISO: string, summary: string): string {
   const d = dateISO.replaceAll("-", "");
   const dt = new Date(dateISO);
@@ -127,6 +145,8 @@ export default function Home() {
   const [photoQuality, setPhotoQuality] = useState<"ok" | "dark" | null>(null);
   const [whyNotOpen, setWhyNotOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
+  const [screen, setScreen] = useState<"home" | "app">("home");
+  const [demoIdx, setDemoIdx] = useState(0);
   const previewUrl = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -203,6 +223,12 @@ export default function Home() {
     );
     return () => clearInterval(id);
   }, [loading]);
+
+  useEffect(() => {
+    if (screen !== "home") return;
+    const id = setInterval(() => setDemoIdx((i) => (i + 1) % DEMO_ITEMS.length), 3200);
+    return () => clearInterval(id);
+  }, [screen]);
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -464,60 +490,116 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-8">
-        <div className="mb-7 text-center">
-          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Free · Private · 10+ languages
-          </span>
-          <h1 className="text-balance text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Confused by a letter? We&apos;ll explain it.
-          </h1>
-          <p className="mx-auto mt-3 max-w-md text-pretty text-base leading-relaxed text-slate-600">
-            For immigrants, seniors, and families navigating confusing official
-            letters — take a photo and we&apos;ll explain it in plain language,
-            warn you of scams, and even rehearse the phone call with you.
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-            {[
-              "Medical bill",
-              "Benefits letter",
-              "Utility notice",
-              "School form",
-              "Legal notice",
-              "Immigration letter",
-            ].map((ex) => (
-              <span
-                key={ex}
-                className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
-              >
-                {ex}
-              </span>
-            ))}
-          </div>
-        </div>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-5">
 
-        {!preview && !result && (
-          <>
-            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <PersonaCard
-                icon="🌍"
-                title="Immigrants & newcomers"
-                desc="Government letters feel impossible when English isn't your first language. We translate every word and tell you exactly what to do."
-              />
-              <PersonaCard
-                icon="👴"
-                title="Seniors & elderly"
-                desc="Medical bills, Medicare notices, Social Security letters — in plain language you can actually understand and act on."
-              />
-              <PersonaCard
-                icon="👨‍👩‍👧"
-                title="Families & students"
-                desc="School forms, housing notices, legal letters — we cut through the jargon so you know exactly what's needed."
-              />
+        {/* ── Landing page ──────────────────────────────────── */}
+        {screen === "home" && (
+          <div className="flex min-h-[calc(100vh-72px)] flex-col justify-between py-10">
+            <div className="flex flex-col items-center text-center">
+              {/* badge */}
+              <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Free · Private · 10+ languages
+              </span>
+
+              {/* headline */}
+              <h1 className="max-w-md text-balance text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-6xl" style={{ fontFamily: "var(--font-playfair), serif" }}>
+                Confused by<br />
+                <em className="not-italic text-blue-700">a letter?</em><br />
+                We&apos;ll explain it.
+              </h1>
+
+              <p className="mx-auto mt-4 max-w-sm text-pretty text-base leading-relaxed text-slate-600">
+                For immigrants, seniors, and families navigating confusing official
+                letters — take a photo and we&apos;ll explain it in plain language,
+                warn you of scams, and even rehearse the phone call with you.
+              </p>
+
+              {/* demo card */}
+              <div className="mt-7 w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-red-700">
+                    {DEMO_ITEMS[demoIdx].label}
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-600">✓ Plain language</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-sm leading-relaxed text-slate-400 line-through decoration-slate-300">
+                    {DEMO_ITEMS[demoIdx].original}
+                  </p>
+                  <div className="my-3 flex justify-center">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm">↓</span>
+                  </div>
+                  <p className="text-sm font-medium leading-relaxed text-slate-900">
+                    {DEMO_ITEMS[demoIdx].translated}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
+                  <div className="flex gap-1.5">
+                    {DEMO_ITEMS.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setDemoIdx(i)}
+                        className={`h-1.5 rounded-full transition-all ${i === demoIdx ? "w-5 bg-blue-600" : "w-1.5 bg-slate-300"}`}
+                        aria-label={`Demo ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs font-medium text-emerald-600">✓ Nothing stored</span>
+                </div>
+              </div>
+
+              {/* stats */}
+              <div className="mt-6 flex w-full max-w-sm divide-x divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+                {[["10+", "languages"], ["16", "verified programs"], ["0", "data stored"]].map(([n, l]) => (
+                  <div key={l} className="flex-1 py-4">
+                    <p className="text-xl font-bold text-blue-700">{n}</p>
+                    <p className="text-xs text-slate-500">{l}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* social proof */}
+              <p className="mt-4 max-w-xs text-center text-xs text-slate-500">
+                About 1 in 5 people who qualify for the Earned Income Tax Credit never claim it —
+                often because the paperwork is confusing.{" "}
+                <a href="https://www.irs.gov/credits-deductions/individuals/earned-income-tax-credit-eitc" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 underline underline-offset-2">IRS</a>
+              </p>
+
+              {/* category chips */}
+              <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+                {["Medical bill", "Benefits letter", "Utility notice", "School form", "Legal notice", "Immigration letter"].map((ex) => (
+                  <span key={ex} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{ex}</span>
+                ))}
+              </div>
             </div>
-            <HowItWorks />
-          </>
+
+            {/* CTAs */}
+            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => setScreen("app")}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+              >
+                📄 I got a confusing letter
+              </button>
+              <button
+                onClick={() => setScreen("app")}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+              >
+                ⊙ I need help, not sure what
+              </button>
+            </div>
+          </div>
         )}
+
+        {/* ── App (upload + results) ─────────────────────────── */}
+        {screen === "app" && (
+        <div className="py-8">
+        <button
+          onClick={() => { reset(); setScreen("home"); }}
+          className="mb-5 flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 focus-visible:outline-none"
+        >
+          ← Back
+        </button>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.02]">
           <label
@@ -1035,6 +1117,8 @@ export default function Home() {
               </button>
             </div>
           </section>
+        )}
+        </div>
         )}
       </main>
 
