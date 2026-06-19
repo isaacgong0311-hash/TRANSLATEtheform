@@ -42,6 +42,7 @@ type Result = {
   whatHappensIfNothing: string;
   photoQualityNote: string | null;
   detectedLetterLanguage: string | null;
+  originalText: string;
 };
 
 const LANGUAGES: { label: string; bcp47: string; tts: string }[] = [
@@ -71,13 +72,31 @@ const URGENCY_LABEL: Record<Result["urgency"], string> = {
   low: "Not urgent",
 };
 
-const LOADING_MESSAGES = [
-  "Reading your letter…",
-  "Finding the important dates…",
-  "Checking for scam warning signs…",
-  "Gathering verified help near you…",
-  "Writing your reply letter…",
+const LOADING_STEPS = [
+  { icon: "📸", label: "Reading your letter" },
+  { icon: "📅", label: "Finding important dates" },
+  { icon: "🔍", label: "Checking for scam signals" },
+  { icon: "🏥", label: "Matching verified programs" },
+  { icon: "✍️", label: "Writing your reply" },
 ];
+
+function syllableCount(word: string): number {
+  const w = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (!w || w.length <= 3) return 1;
+  const stripped = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "").replace(/^y/, "");
+  const m = stripped.match(/[aeiouy]{1,2}/g);
+  return Math.max(1, m ? m.length : 1);
+}
+
+function fleschKincaidGrade(text: string): number {
+  if (!text?.trim()) return 0;
+  const sentences = Math.max(1, (text.match(/[.!?]+/g) ?? []).length);
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return 0;
+  const sylls = words.reduce((s, w) => s + syllableCount(w), 0);
+  const grade = 0.39 * (words.length / sentences) + 11.8 * (sylls / words.length) - 15.59;
+  return Math.max(1, Math.round(grade));
+}
 
 const DEMO_ITEMS = [
   {
@@ -218,7 +237,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading) return;
     const id = setInterval(
-      () => setLoadingMsg((m) => (m + 1) % LOADING_MESSAGES.length),
+      () => setLoadingMsg((m) => (m + 1) % LOADING_STEPS.length),
       1800,
     );
     return () => clearInterval(id);
@@ -329,7 +348,7 @@ export default function Home() {
       const res = await fetch("/api/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, bcp47: lang.bcp47 }),
       });
       if (res.ok) {
         const blob = await res.blob();
@@ -706,7 +725,7 @@ export default function Home() {
                 >
                   {loading ? (
                     <>
-                      <Spinner /> {LOADING_MESSAGES[loadingMsg]}
+                      <Spinner /> {LOADING_STEPS[loadingMsg].label}…
                     </>
                   ) : (
                     "Explain this letter"
@@ -764,8 +783,30 @@ export default function Home() {
           </p>
         </div>
 
+        {/* Visual progress steps */}
+        {loading && (
+          <div className="ttf-fade-in mt-6 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 p-5" role="status" aria-label="Analyzing your letter">
+            <p className="mb-3 text-sm font-semibold text-blue-800">Analyzing your letter…</p>
+            <ol className="space-y-2">
+              {LOADING_STEPS.map((s, i) => {
+                const done = i < loadingMsg;
+                const active = i === loadingMsg;
+                return (
+                  <li key={i} className={`flex items-center gap-3 text-sm transition-all ${done ? "text-emerald-700" : active ? "text-blue-800 font-semibold" : "text-slate-400"}`}>
+                    <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full text-sm">
+                      {done ? "✓" : active ? s.icon : s.icon}
+                    </span>
+                    <span>{s.label}</span>
+                    {active && <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
+
         <div aria-live="polite" className="sr-only">
-          {loading ? LOADING_MESSAGES[loadingMsg] : ""}
+          {loading ? LOADING_STEPS[loadingMsg].label : result ? "Analysis complete" : ""}
         </div>
 
         {error && (
@@ -783,13 +824,25 @@ export default function Home() {
 
         {result && (
           <section
-            className="mt-6 space-y-7"
+            className="mt-6 space-y-4"
             lang={lang.bcp47}
             aria-label="Explanation of your letter"
+            aria-live="polite"
           >
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
-              <span className="font-semibold">Lantern explains — it doesn&apos;t decide.</span> Always confirm with the office named on your letter before taking action.
+            {/* Human-in-loop banner + FK grade */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
+              <span><span className="font-semibold">Lantern explains — it doesn&apos;t decide.</span> Always confirm with the office named on your letter before taking action.</span>
+              {result.originalText && (() => {
+                const before = fleschKincaidGrade(result.originalText);
+                const after = fleschKincaidGrade(result.meaning);
+                return (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                    Grade {before} → Grade {after}
+                  </span>
+                );
+              })()}
             </div>
+
 
             {result.photoQualityNote && (
               <div className="ttf-fade-in rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
@@ -846,6 +899,20 @@ export default function Home() {
                 <p className="mt-1 text-red-800">{result.crisisMessage}</p>
               </div>
             )}
+
+            {/* Side-by-side on desktop: letter image on left, tabs on right */}
+            <div className={preview ? "md:grid md:grid-cols-[200px,1fr] md:items-start md:gap-4" : ""}>
+              {preview && (
+                <div className="hidden md:flex md:flex-col md:gap-2 md:pt-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={preview} alt="Your letter" className="w-full rounded-xl border border-slate-200 object-contain shadow-sm" />
+                  <div className="flex flex-wrap gap-1">
+                    <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${URGENCY_STYLES[result.urgency]}`}>{URGENCY_LABEL[result.urgency]}</span>
+                    {result.keyDetails?.amountDue && <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">💵 {result.keyDetails.amountDue}</span>}
+                    {result.keyDetails?.contactPhone && <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600">📞 {result.keyDetails.contactPhone}</span>}
+                  </div>
+                </div>
+              )}
 
             {/* Tab bar */}
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1094,6 +1161,7 @@ export default function Home() {
                 )}
               </div>
             </div>
+            </div> {/* closes side-by-side wrapper */}
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               <span className="font-semibold">⚠️ AI can make mistakes.</span>{" "}

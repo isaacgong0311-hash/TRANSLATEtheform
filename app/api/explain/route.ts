@@ -141,6 +141,11 @@ const ResultSchema = z.object({
     .describe(
       "The language the letter itself is written in, e.g. 'English', 'Spanish', 'Chinese'. null if cannot be determined.",
     ),
+  originalText: z
+    .string()
+    .describe(
+      "The verbatim text you can read from the letter, copied exactly as printed — including all jargon, legal terms, and sentence structure. This is used to measure the original reading difficulty. If the photo is too unclear to read, write what you can. Never paraphrase.",
+    ),
 });
 
 // A compact, human-readable description of the exact JSON the model must emit.
@@ -177,7 +182,8 @@ const JSON_SHAPE = `{
   "scamAgencyFacts": string,         // if scam: what the REAL agency does/doesn't do; else ""
   "whatHappensIfNothing": string,    // calm 1-2 sentence consequence of inaction; "" if no action needed
   "photoQualityNote": string or null, // one sentence photo problem if hard to read; null if fine
-  "detectedLetterLanguage": string or null  // language the letter is written in; null if unclear
+  "detectedLetterLanguage": string or null, // language the letter is written in; null if unclear
+  "originalText": string  // verbatim text copied exactly from the letter, preserving all jargon and structure
 }`;
 
 // Strip code fences then use bracket-counting to find the outermost {...}.
