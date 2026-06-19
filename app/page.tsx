@@ -164,7 +164,8 @@ export default function Home() {
   const [photoQuality, setPhotoQuality] = useState<"ok" | "dark" | null>(null);
   const [whyNotOpen, setWhyNotOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
-  const [screen, setScreen] = useState<"home" | "app">("home");
+  const [screen, setScreen] = useState<"home" | "app" | "help">("home");
+  const [helpCategory, setHelpCategory] = useState<Category | null>(null);
   const [demoIdx, setDemoIdx] = useState(0);
   const [formTab, setFormTab] = useState<0 | 1 | 2>(0);
   const previewUrl = useRef<string | null>(null);
@@ -573,8 +574,8 @@ export default function Home() {
               <button onClick={() => setScreen("app")} className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 📄 I got a confusing letter
               </button>
-              <button onClick={() => setScreen("app")} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
-                ⊙ I need help, not sure what
+              <button onClick={() => { setHelpCategory(null); setScreen("help"); }} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+                🤝 I need help, not sure what
               </button>
             </div>
 
@@ -1188,6 +1189,108 @@ export default function Home() {
           </section>
         )}
         </div>
+        )}
+
+        {/* ── Help screen ───────────────────────────────────── */}
+        {screen === "help" && (
+          <div className="py-10 max-w-2xl mx-auto">
+            <button onClick={() => { setHelpCategory(null); setScreen("home"); }} className="mb-6 flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 focus-visible:outline-none">
+              ← Back
+            </button>
+
+            {!helpCategory ? (
+              <>
+                <h2 className="text-2xl font-bold text-slate-900" style={{ fontFamily: "var(--font-playfair), serif" }}>What&apos;s going on?</h2>
+                <p className="mt-2 text-sm text-slate-500">Pick the closest option — we&apos;ll show you the right people to call right now, no letter needed.</p>
+                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {([
+                    { key: "housing", icon: "🏠", label: "Housing", desc: "Eviction, rent, landlord" },
+                    { key: "healthcare", icon: "🏥", label: "Healthcare", desc: "Medical bills, insurance" },
+                    { key: "benefits", icon: "🍎", label: "Food & benefits", desc: "SNAP, food stamps" },
+                    { key: "utilities", icon: "⚡", label: "Utilities", desc: "Shutoff notice" },
+                    { key: "legal", icon: "⚖️", label: "Legal trouble", desc: "Court, fines, summons" },
+                    { key: "school", icon: "🎓", label: "School", desc: "Financial aid, forms" },
+                    { key: "financial", icon: "💳", label: "Debt & money", desc: "Collections, bills" },
+                    { key: "immigration", icon: "🛂", label: "Immigration", desc: "USCIS, visas" },
+                    { key: "other", icon: "🤝", label: "Something else", desc: "General resources" },
+                  ] as { key: Category; icon: string; label: string; desc: string }[]).map(({ key, icon, label, desc }) => (
+                    <button
+                      key={key}
+                      onClick={() => setHelpCategory(key)}
+                      className="flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-xl">{icon}</span>
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">{label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-center">
+                  <p className="text-sm font-semibold text-blue-900">Not sure? Call 211</p>
+                  <p className="text-xs text-blue-700 mt-1">Free, 24/7, confidential — available in many languages. They connect you to local help.</p>
+                  <a href="tel:211" className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                    📞 Call 211
+                  </a>
+                </div>
+                <p className="mt-5 text-center text-xs text-slate-400">
+                  Or{" "}
+                  <button onClick={() => setScreen("app")} className="text-blue-600 underline underline-offset-2 hover:text-blue-700">
+                    upload a letter
+                  </button>{" "}
+                  and we&apos;ll read it for you.
+                </p>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setHelpCategory(null)} className="mb-5 flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 focus-visible:outline-none">
+                  ← All categories
+                </button>
+                <h2 className="text-2xl font-bold text-slate-900" style={{ fontFamily: "var(--font-playfair), serif" }}>
+                  {{
+                    housing: "🏠 Housing help",
+                    healthcare: "🏥 Healthcare help",
+                    benefits: "🍎 Food & benefits",
+                    utilities: "⚡ Utility help",
+                    legal: "⚖️ Legal help",
+                    school: "🎓 School & financial aid",
+                    financial: "💳 Debt & money help",
+                    immigration: "🛂 Immigration help",
+                    other: "🤝 General resources",
+                  }[helpCategory]}
+                </h2>
+                <p className="mt-2 text-sm text-slate-500">These are real, free, national resources — verified by hand, not generated by AI.</p>
+                <div className="mt-5 space-y-3">
+                  {RESOURCES[helpCategory].map((r) => (
+                    <div key={r.name} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <p className="font-semibold text-slate-900">{r.name}</p>
+                      <p className="mt-0.5 text-sm text-slate-500">{r.desc}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {r.phone && (
+                          <a href={`tel:${r.phone}`} className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-700">
+                            📞 {r.phone}
+                          </a>
+                        )}
+                        {r.url && (
+                          <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                            Visit website ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+                  <p className="text-sm font-semibold text-slate-800">Have a letter about this?</p>
+                  <p className="mt-1 text-xs text-slate-500">Upload it and we&apos;ll explain exactly what it says and what to do.</p>
+                  <button onClick={() => setScreen("app")} className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                    📄 Upload my letter
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </main>
 
